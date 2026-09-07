@@ -1,0 +1,256 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { CloudSun, Star, CheckCircle2, Circle, Flame, Smile } from "lucide-react";
+import { usePrioritiesStore } from "@/store/priorities";
+import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+type Task = { id: string; title: string; completed: boolean; priority: number; dueDate: string | null };
+type EventT = { id: string; title: string; startsAt: string; endsAt: string; allDay: boolean; location: string | null };
+type Habit = { id: string; name: string };
+type HabitLog = { id: string; habitId: string; date: string; completed: boolean };
+type Wellness = {
+  sleepHours: number | null;
+  steps: number | null;
+  exerciseMinutes: number | null;
+  energy: number | null;
+  stress: number | null;
+} | null;
+type Journal = { mood: number; energy: number; text: string | null } | null;
+
+export default function DashboardClient({
+  userName,
+  greeting,
+  hoursLeft,
+  events,
+  tasks,
+  habits,
+  habitLogsToday,
+  yesterdayWellness,
+  todayJournal,
+}: {
+  userName: string;
+  greeting: string;
+  hoursLeft: number;
+  events: EventT[];
+  tasks: Task[];
+  habits: Habit[];
+  habitLogsToday: HabitLog[];
+  yesterdayWellness: Wellness;
+  todayJournal: Journal;
+}) {
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const { getPriorities, togglePriority } = usePrioritiesStore();
+  const priorityIds = getPriorities(todayKey);
+  const queryClient = useQueryClient();
+  const [completedLocal, setCompletedLocal] = useState<Record<string, boolean>>({});
+  const [habitDoneLocal, setHabitDoneLocal] = useState<Record<string, boolean>>(
+    Object.fromEntries(habitLogsToday.map((l) => [l.habitId, l.completed]))
+  );
+
+  const toggleTask = useMutation({
+    mutationFn: (task: Task) =>
+      apiFetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ completed: !completedLocal[task.id] && !task.completed }),
+      }),
+    onMutate: (task) => {
+      setCompletedLocal((s) => ({ ...s, [task.id]: !(s[task.id] ?? task.completed) }));
+    },
+  });
+
+  const toggleHabit = useMutation({
+    mutationFn: (habitId: string) =>
+      apiFetch("/api/habits/log", { method: "POST", body: JSON.stringify({ habitId }) }),
+    onMutate: (habitId) => {
+      setHabitDoneLocal((s) => ({ ...s, [habitId]: !s[habitId] }));
+    },
+  });
+
+  const priorityTasks = tasks.filter((t) => priorityIds.includes(t.id));
+
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="font-serif text-3xl text-ink md:text-4xl">
+          {greeting}, {userName.split(" ")[0]}
+        </h1>
+        <p className="text-sm text-ink-light">
+          {format(new Date(), "EEEE, MMMM d")} · {hoursLeft} hours left today
+        </p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {/* Weather placeholder */}
+        <div className="card flex items-center gap-4 md:col-span-1">
+          <CloudSun className="text-sage-500" size={36} />
+          <div>
+            <p className="text-2xl font-semibold">72°F</p>
+            <p className="text-xs text-ink-light">Partly cloudy (mock data)</p>
+          </div>
+        </div>
+
+        {/* Today's priorities */}
+        <div className="card md:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-serif text-lg text-ink">Today's Priorities</h2>
+            <span className="text-xs text-ink-light">{priorityIds.length}/3 selected</span>
+          </div>
+          {priorityTasks.length === 0 ? (
+            <p className="text-sm text-ink-light">
+              Pick up to 3 priorities from your{" "}
+              <Link href="/tasks" className="text-sage-600 underline">
+                task list
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {priorityTasks.map((t) => (
+                <li key={t.id} className="flex items-center gap-2">
+                  <Star size={16} className="text-sage-500" fill="currentColor" />
+                  <span className={cn(t.completed && "line-through text-ink-light")}>{t.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {/* Upcoming events */}
+        <div className="card">
+          <h2 className="mb-3 font-serif text-lg text-ink">Upcoming Events</h2>
+          {events.length === 0 ? (
+            <p className="text-sm text-ink-light">No events scheduled. Nice and clear.</p>
+          ) : (
+            <ul className="space-y-3">
+              {events.map((e) => (
+                <li key={e.id} className="border-l-2 border-sage-300 pl-3">
+                  <p className="text-sm font-medium">{e.title}</p>
+                  <p className="text-xs text-ink-light">
+                    {e.allDay ? "All day" : format(new Date(e.startsAt), "MMM d, h:mm a")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/calendar" className="mt-3 inline-block text-xs text-sage-600 underline">
+            Open calendar
+          </Link>
+        </div>
+
+        {/* Today's tasks */}
+        <div className="card">
+          <h2 className="mb-3 font-serif text-lg text-ink">Today's Tasks</h2>
+          {tasks.length === 0 ? (
+            <p className="text-sm text-ink-light">All caught up.</p>
+          ) : (
+            <ul className="space-y-2">
+              {tasks.slice(0, 6).map((t) => {
+                const done = completedLocal[t.id] ?? t.completed;
+                return (
+                  <li key={t.id} className="flex items-center gap-2">
+                    <button onClick={() => toggleTask.mutate(t)} className="text-sage-500">
+                      {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                    </button>
+                    <div className="flex flex-1 items-center justify-between gap-2">
+                      <span className={cn("text-sm", done && "line-through text-ink-light")}>{t.title}</span>
+                      <button
+                        onClick={() => togglePriority(todayKey, t.id)}
+                        className={cn(
+                          "text-ink-light hover:text-sage-500",
+                          priorityIds.includes(t.id) && "text-sage-500"
+                        )}
+                        title="Mark as today's priority"
+                      >
+                        <Star size={14} fill={priorityIds.includes(t.id) ? "currentColor" : "none"} />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <Link href="/tasks" className="mt-3 inline-block text-xs text-sage-600 underline">
+            View all tasks
+          </Link>
+        </div>
+
+        {/* Today's habits */}
+        <div className="card">
+          <h2 className="mb-3 font-serif text-lg text-ink">Habit Tracker</h2>
+          {habits.length === 0 ? (
+            <p className="text-sm text-ink-light">No habits yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {habits.map((h) => {
+                const done = habitDoneLocal[h.id];
+                return (
+                  <li key={h.id} className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Flame size={14} className={done ? "text-sage-500" : "text-ink-light"} />
+                      {h.name}
+                    </span>
+                    <button
+                      onClick={() => toggleHabit.mutate(h.id)}
+                      className={cn(
+                        "h-6 w-6 rounded-full border-2",
+                        done ? "border-sage-400 bg-sage-400" : "border-cream-300"
+                      )}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <Link href="/habits" className="mt-3 inline-block text-xs text-sage-600 underline">
+            Manage habits
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        {/* Yesterday wellness summary */}
+        <div className="card">
+          <h2 className="mb-3 font-serif text-lg text-ink">Yesterday's Wellness</h2>
+          {yesterdayWellness ? (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <p>Sleep: {yesterdayWellness.sleepHours ?? "—"}h</p>
+              <p>Steps: {yesterdayWellness.steps ?? "—"}</p>
+              <p>Exercise: {yesterdayWellness.exerciseMinutes ?? "—"} min</p>
+              <p>Energy: {yesterdayWellness.energy ?? "—"}/10</p>
+            </div>
+          ) : (
+            <p className="text-sm text-ink-light">No log for yesterday.</p>
+          )}
+          <Link href="/wellness" className="mt-3 inline-block text-xs text-sage-600 underline">
+            Log wellness
+          </Link>
+        </div>
+
+        {/* Journal / mood quick access */}
+        <div className="card">
+          <h2 className="mb-3 flex items-center gap-2 font-serif text-lg text-ink">
+            <Smile size={18} className="text-sage-500" /> Today's Journal
+          </h2>
+          {todayJournal ? (
+            <div className="text-sm">
+              <p>Mood: {todayJournal.mood}/5 · Energy: {todayJournal.energy}/10</p>
+              {todayJournal.text && <p className="mt-1 text-ink-light line-clamp-2">{todayJournal.text}</p>}
+            </div>
+          ) : (
+            <p className="text-sm text-ink-light">You haven't journaled today.</p>
+          )}
+          <Link href="/journal" className="mt-3 inline-block text-xs text-sage-600 underline">
+            Open journal
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

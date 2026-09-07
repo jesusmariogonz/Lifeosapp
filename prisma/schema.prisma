@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  X_PER_WEEK
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String?
+  name          String?
+  image         String?
+  createdAt     DateTime @default(now())
+
+  events         Event[]
+  tasks          Task[]
+  habits         Habit[]
+  goals          Goal[]
+  wellnessLogs   WellnessLog[]
+  financeAccounts FinanceAccount[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  journalEntries JournalEntry[]
+  weeklyReviews  WeeklyReview[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime
+  allDay      Boolean  @default(false)
+  location    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, startsAt])
+}
+
+model Task {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  notes          String?
+  dueDate        DateTime?
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  goalId         String?
+  goal           Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  objectiveId    String?
+  objective      Objective? @relation(fields: [objectiveId], references: [id], onDelete: SetNull)
+  priority       Int       @default(2) // 1=high 2=med 3=low
+  // V2: cross-area analytics hook
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, dueDate])
+}
+
+model Habit {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  frequency      HabitFrequency @default(DAILY)
+  targetPerWeek  Int?
+  createdAt      DateTime       @default(now())
+  logs           HabitLog[]
+
+  @@index([userId])
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      DateTime
+  completed Boolean  @default(true)
+
+  @@unique([habitId, date])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  vision      String?
+  createdAt   DateTime @default(now())
+
+  objectives  Objective[]
+  tasks       Task[]
+
+  @@index([userId])
+}
+
+model Objective {
+  id            String   @id @default(cuid())
+  goalId        String
+  goal          Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  createdAt     DateTime @default(now())
+
+  tasks         Task[]
+  weeklyTargets WeeklyTarget[]
+
+  @@index([goalId])
+}
+
+model WeeklyTarget {
+  id          String    @id @default(cuid())
+  objectiveId String
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  title       String
+  weekStart   DateTime
+  completed   Boolean   @default(false)
+
+  @@index([objectiveId, weekStart])
+}
+
+model WellnessLog {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime
+  sleepHours      Float?
+  weight          Float?
+  steps           Int?
+  exerciseMinutes Int?
+  waterOz         Float?
+  energy          Int?
+  stress          Int?
+  // V4: wearable/health integration hook
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model FinanceAccount {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name    String
+  type    String
+  balance Float    @default(0)
+
+  transactions Transaction[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     FinanceAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  amount      Float
+  category    String
+  description String?
+  date        DateTime
+  isIncome    Boolean         @default(false)
+
+  @@index([userId, date])
+}
+
+model Budget {
+  id           String @id @default(cuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String
+  monthlyLimit Float
+  month        String // e.g. "2026-09"
+
+  @@index([userId, month])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  mood      Int // 1-5
+  energy    Int // 1-10
+  stress    Int // 1-10
+  text      String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model WeeklyReview {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart       DateTime
+  tasksCompleted  Int      @default(0)
+  habitsPercent   Float    @default(0)
+  financeSummary  Json?
+  wellnessSummary Json?
+  goalsProgress   Json?
+  wentWell        String?
+  improve         String?
+  nextPriority    String?
+  // V3: AI planning assistant hook
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, weekStart])
+}
