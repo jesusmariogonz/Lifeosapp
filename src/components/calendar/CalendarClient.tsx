@@ -30,6 +30,36 @@ type EventT = {
 
 type View = "month" | "week" | "day";
 
+type Contact = {
+  id: string;
+  name: string;
+  importantDates: { id: string; label: string; date: string; recurring: boolean }[];
+};
+
+// V4: Relationships feed — important dates surface on the calendar alongside real events
+function contactDateOccurrences(contacts: Contact[], year: number): EventT[] {
+  const occurrences: EventT[] = [];
+  for (const c of contacts) {
+    for (const d of c.importantDates) {
+      const orig = new Date(d.date);
+      const occursYear = d.recurring ? year : orig.getFullYear();
+      if (d.recurring || occursYear === year) {
+        const occ = new Date(occursYear, orig.getMonth(), orig.getDate());
+        occurrences.push({
+          id: `cd-${d.id}-${occursYear}`,
+          title: `${d.label}: ${c.name}`,
+          description: null,
+          startsAt: occ.toISOString(),
+          endsAt: occ.toISOString(),
+          allDay: true,
+          location: null,
+        });
+      }
+    }
+  }
+  return occurrences;
+}
+
 export default function CalendarClient() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<View>("month");
@@ -41,10 +71,27 @@ export default function CalendarClient() {
     queryFn: () => apiFetch("/api/events"),
   });
 
+  const { data: contacts } = useQuery<Contact[]>({
+    queryKey: ["contacts"],
+    queryFn: () => apiFetch("/api/contacts"),
+  });
+
+  const contactEvents = useMemo(() => {
+    const years = new Set([cursor.getFullYear(), cursor.getFullYear() + 1]);
+    return Array.from(years).flatMap((y) => contactDateOccurrences(contacts || [], y));
+  }, [contacts, cursor]);
+
+  const allEvents = useMemo(() => [...(events || []), ...contactEvents], [events, contactEvents]);
+
   const deleteEvent = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/events/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["events"] }),
   });
+
+  function handleDelete(id: string) {
+    if (id.startsWith("cd-")) return; // contact important dates aren't deletable here
+    deleteEvent.mutate(id);
+  }
 
   const rangeLabel = useMemo(() => {
     if (view === "month") return format(cursor, "MMMM yyyy");
@@ -59,7 +106,7 @@ export default function CalendarClient() {
     else setCursor(addDays(cursor, dir));
   }
 
-  const eventsFor = (day: Date) => (events || []).filter((e) => isSameDay(new Date(e.startsAt), day));
+  const eventsFor = (day: Date) => allEvents.filter((e) => isSameDay(new Date(e.startsAt), day));
 
   return (
     <div className="space-y-4">
@@ -94,8 +141,8 @@ export default function CalendarClient() {
       {view === "month" && (
         <MonthView cursor={cursor} eventsFor={eventsFor} onDayClick={setModalDate} />
       )}
-      {view === "week" && <WeekView cursor={cursor} eventsFor={eventsFor} onDayClick={setModalDate} onDelete={(id) => deleteEvent.mutate(id)} />}
-      {view === "day" && <DayView cursor={cursor} eventsFor={eventsFor} onDelete={(id) => deleteEvent.mutate(id)} />}
+      {view === "week" && <WeekView cursor={cursor} eventsFor={eventsFor} onDayClick={setModalDate} onDelete={handleDelete} />}
+      {view === "day" && <DayView cursor={cursor} eventsFor={eventsFor} onDelete={handleDelete} />}
 
       {modalDate && <EventModal date={modalDate} onClose={() => setModalDate(null)} />}
     </div>

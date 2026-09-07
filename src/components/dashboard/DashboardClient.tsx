@@ -21,6 +21,7 @@ type Wellness = {
   stress: number | null;
 } | null;
 type Journal = { mood: number; energy: number; text: string | null } | null;
+type UpcomingDate = { label: string; contactName: string; next: string };
 
 export default function DashboardClient({
   userName,
@@ -32,6 +33,7 @@ export default function DashboardClient({
   habitLogsToday,
   yesterdayWellness,
   todayJournal,
+  upcomingDates,
 }: {
   userName: string;
   greeting: string;
@@ -42,6 +44,7 @@ export default function DashboardClient({
   habitLogsToday: HabitLog[];
   yesterdayWellness: Wellness;
   todayJournal: Journal;
+  upcomingDates: UpcomingDate[];
 }) {
   const todayKey = format(new Date(), "yyyy-MM-dd");
   const { getPriorities, togglePriority } = usePrioritiesStore();
@@ -138,6 +141,16 @@ export default function DashboardClient({
                 </li>
               ))}
             </ul>
+          )}
+          {upcomingDates.length > 0 && (
+            <div className="mt-3 space-y-1 border-t border-cream-300 pt-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-light">Upcoming dates</p>
+              {upcomingDates.map((d, i) => (
+                <p key={i} className="text-xs text-ink-light">
+                  {d.label} — {d.contactName} · {format(new Date(d.next), "MMM d")}
+                </p>
+              ))}
+            </div>
           )}
           <Link href="/calendar" className="mt-3 inline-block text-xs text-sage-600 underline">
             Open calendar

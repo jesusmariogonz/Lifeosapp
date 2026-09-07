@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const [user, events, tasks, habits, habitLogsToday, yesterdayWellness, todayJournal] =
+  const [user, events, tasks, habits, habitLogsToday, yesterdayWellness, todayJournal, contacts] =
     await Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),
       prisma.event.findMany({
@@ -32,7 +32,21 @@ export default async function DashboardPage() {
       prisma.habitLog.findMany({ where: { habit: { userId }, date: today } }),
       prisma.wellnessLog.findUnique({ where: { userId_date: { userId, date: yesterday } } }),
       prisma.journalEntry.findUnique({ where: { userId_date: { userId, date: today } } }),
+      // V4: Relationships feed — important dates surface on the dashboard as upcoming events
+      prisma.contact.findMany({ where: { userId }, include: { importantDates: true } }),
     ]);
+
+  const upcomingDates = contacts
+    .flatMap((c) => c.importantDates.map((d) => ({ label: d.label, contactName: c.name, date: d.date })))
+    .map((d) => {
+      const orig = new Date(d.date);
+      const next = new Date(today.getFullYear(), orig.getMonth(), orig.getDate());
+      if (next < today) next.setFullYear(next.getFullYear() + 1);
+      return { ...d, next };
+    })
+    .filter((d) => d.next.getTime() - today.getTime() <= 30 * 86400000)
+    .sort((a, b) => a.next.getTime() - b.next.getTime())
+    .slice(0, 4);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -49,6 +63,7 @@ export default async function DashboardPage() {
       habitLogsToday={JSON.parse(JSON.stringify(habitLogsToday))}
       yesterdayWellness={JSON.parse(JSON.stringify(yesterdayWellness))}
       todayJournal={JSON.parse(JSON.stringify(todayJournal))}
+      upcomingDates={JSON.parse(JSON.stringify(upcomingDates))}
     />
   );
 }

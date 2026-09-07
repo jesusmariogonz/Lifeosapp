@@ -14,6 +14,10 @@ import {
   BookOpen,
   BarChart3,
   LogOut,
+  LineChart,
+  Sparkles,
+  Plug,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +31,10 @@ const NAV = [
   { href: "/wellness", label: "Wellness & Health", icon: HeartPulse },
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/weekly-review", label: "Weekly Review", icon: BarChart3 },
+  { href: "/analytics", label: "Analytics", icon: LineChart },
+  { href: "/assistant", label: "Assistant", icon: Sparkles },
+  { href: "/relationships", label: "Relationships", icon: Users },
+  { href: "/integrations", label: "Integrations", icon: Plug },
 ];
 
 export default function Sidebar() {

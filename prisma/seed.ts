@@ -179,6 +179,29 @@ async function main() {
     },
   });
 
+  // Relationships (V4)
+  await prisma.contact.create({
+    data: {
+      userId: user.id,
+      name: "Maria Gonzalez",
+      relationship: "Sister",
+      notes: "Lives in Austin, loves hiking.",
+      importantDates: {
+        create: [{ label: "Birthday", date: new Date(new Date().getFullYear(), 9, 12), recurring: true }],
+      },
+    },
+  });
+  await prisma.contact.create({
+    data: {
+      userId: user.id,
+      name: "Sam Patel",
+      relationship: "Best friend",
+      importantDates: {
+        create: [{ label: "Anniversary of friendship", date: new Date(new Date().getFullYear(), 5, 1), recurring: true }],
+      },
+    },
+  });
+
   console.log("Seed complete. Demo login: demo@lifeos.app / demo1234");
 }
 

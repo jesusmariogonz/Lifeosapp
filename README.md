@@ -1,6 +1,15 @@
 # Life OS
 
-A calm, all-in-one personal life-management app: dashboard, calendar, tasks, habits, goals, finance, wellness, journal, and weekly review — built with Next.js (App Router), TypeScript, Tailwind CSS, Prisma/PostgreSQL, and NextAuth.
+A calm, all-in-one personal life-management app: dashboard, calendar, tasks, habits, goals, finance, wellness, journal, weekly review, cross-area analytics, an AI planning assistant, relationships, and integrations — built with Next.js (App Router), TypeScript, Tailwind CSS, Prisma/PostgreSQL, and NextAuth.
+
+## Features
+
+- **Dashboard** — "My Life Today" rollup of tasks, events, habits, wellness, journal, and upcoming important dates
+- **Calendar, Tasks, Habits, Goals, Finance, Wellness, Journal, Weekly Review** — full CRUD modules
+- **Analytics** (`/analytics`) — real charts computed from your data: habit trends, task velocity, wellness and mood trends, income/expenses, spending by category, and simple honest correlations (e.g. mood on habit vs non-habit days, stress vs sleep)
+- **Assistant** (`/assistant`) — a chat-style AI planning assistant grounded in your real tasks/events/habits/goals/wellness/journal, plus a "Generate today's plan" action you can accept into your 3 daily priorities
+- **Relationships** (`/relationships`) — contacts with important dates (birthdays, anniversaries) that surface on the Calendar and Dashboard
+- **Integrations** (`/integrations`) — honest "Coming soon" cards for Apple Health/Google Fit and Travel sync; Wellness logs already carry a `source` field ("manual" today, ready for synced sources later)
 
 ## Stack
 
@@ -9,6 +18,8 @@ A calm, all-in-one personal life-management app: dashboard, calendar, tasks, hab
 - Prisma ORM + PostgreSQL
 - NextAuth.js — Credentials (email/password + bcrypt) and optional Google OAuth
 - TanStack Query for data fetching, Zustand for light client state
+- Recharts for analytics charts
+- `@anthropic-ai/sdk` (model `claude-sonnet-5`) for the AI planning assistant
 
 ## Getting started
 
@@ -33,6 +44,9 @@ A calm, all-in-one personal life-management app: dashboard, calendar, tasks, hab
    - `GOOGLE_CLIENT_ID`
    - `GOOGLE_CLIENT_SECRET`
    - `NEXT_PUBLIC_GOOGLE_ENABLED="true"` to show the Google button
+
+   Optional (AI Planning Assistant):
+   - `ANTHROPIC_API_KEY` — your Anthropic API key. Without it, `/assistant` shows a friendly "AI assistant not configured" state; everything else in the app works normally.
 
 3. Push the schema to your database and generate the Prisma client:
 
@@ -64,19 +78,18 @@ npm run start
 
 ## Project structure
 
-- `prisma/schema.prisma` — full data model (User, Event, Task, Habit/HabitLog, Goal/Objective/WeeklyTarget, WellnessLog, FinanceAccount/Transaction/Budget, JournalEntry, WeeklyReview)
+- `prisma/schema.prisma` — full data model (User, Event, Task, Habit/HabitLog, Goal/Objective/WeeklyTarget, WellnessLog, FinanceAccount/Transaction/Budget, JournalEntry, WeeklyReview, Contact/ImportantDate)
 - `prisma/seed.ts` — demo data seed script
 - `src/app/(auth)` — login/signup pages
-- `src/app/(app)` — authenticated app shell + pages (dashboard, calendar, tasks, goals, habits, finance, wellness, journal, weekly-review)
-- `src/app/api` — REST-ish route handlers backing every module
+- `src/app/(app)` — authenticated app shell + pages (dashboard, calendar, tasks, goals, habits, finance, wellness, journal, weekly-review, analytics, assistant, relationships, integrations)
+- `src/app/api` — REST-ish route handlers backing every module, including `/api/analytics`, `/api/assistant/chat`, `/api/assistant/plan`, `/api/contacts`
 - `src/components` — UI, organized per module
-- `src/lib` — Prisma client, NextAuth config, small utils
+- `src/lib` — Prisma client, NextAuth config, Anthropic client + user-context builder, small utils
 - `src/store` — Zustand stores (e.g. daily priority selection)
 
-## Future hooks
+## Real integration hook points
 
-The codebase marks intentional extension points for later versions:
+`/integrations` and the Wellness module mark where real OAuth-backed sync would plug in:
 
-- `// V2: cross-area analytics hook` — cross-module rollups on the dashboard/weekly review
-- `// V3: AI planning assistant hook` — an AI planner consuming weekly reviews/tasks
-- `// V4: wearable/health integration hook` — device-synced wellness data
+- `// V4: wire real Apple HealthKit / Google Fit OAuth here` — `WellnessLog.source` already distinguishes "manual" from future synced sources
+- `// V4: wire real travel API here` — trips would create/annotate Calendar events and flag travel days on Wellness trends

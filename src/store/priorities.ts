@@ -5,6 +5,7 @@ interface PrioritiesState {
   byDate: Record<string, string[]>; // date -> taskIds (max 3)
   togglePriority: (date: string, taskId: string) => void;
   getPriorities: (date: string) => string[];
+  setPriorities: (date: string, taskIds: string[]) => void;
 }
 
 export const usePrioritiesStore = create<PrioritiesState>()(
@@ -24,6 +25,9 @@ export const usePrioritiesStore = create<PrioritiesState>()(
         set({ byDate: { ...get().byDate, [date]: next } });
       },
       getPriorities: (date) => get().byDate[date] || [],
+      setPriorities: (date, taskIds) => {
+        set({ byDate: { ...get().byDate, [date]: taskIds.slice(0, 3) } });
+      },
     }),
     { name: "life-os-priorities" }
   )

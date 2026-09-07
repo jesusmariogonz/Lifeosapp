@@ -31,6 +31,7 @@ model User {
   budgets        Budget[]
   journalEntries JournalEntry[]
   weeklyReviews  WeeklyReview[]
+  contacts       Contact[]
 }
 
 model Event {
@@ -146,9 +147,36 @@ model WellnessLog {
   energy          Int?
   stress          Int?
   // V4: wearable/health integration hook
+  source          String   @default("manual") // "manual" | "apple_health" | "google_fit" (future)
   createdAt       DateTime @default(now())
 
   @@unique([userId, date])
+}
+
+// V4: Relationships — functional now; feeds Calendar/Dashboard with upcoming important dates
+model Contact {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  relationship String?
+  notes        String?
+  createdAt    DateTime        @default(now())
+
+  importantDates ImportantDate[]
+
+  @@index([userId])
+}
+
+model ImportantDate {
+  id        String   @id @default(cuid())
+  contactId String
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  label     String // e.g. "Birthday", "Anniversary"
+  date      DateTime // month/day matters most; year may be a placeholder
+  recurring Boolean  @default(true)
+
+  @@index([contactId])
 }
 
 model FinanceAccount {
