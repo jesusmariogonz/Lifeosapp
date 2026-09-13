@@ -14,6 +14,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,14 @@ type EventT = {
   endsAt: string;
   allDay: boolean;
   location: string | null;
+};
+
+type TaskT = {
+  id: string;
+  title: string;
+  completed: boolean;
+  priority: number;
+  dueDate: string | null;
 };
 
 type View = "month" | "week" | "day";
@@ -312,6 +321,98 @@ function DayView({
         ))}
         {dayEvents.length === 0 && <p className="py-4 text-sm text-ink-light">No events today.</p>}
       </ul>
+    </div>
+  );
+}
+
+function DayDetailModal({
+  date,
+  events,
+  tasks,
+  onClose,
+  onDelete,
+  onToggleTask,
+  onAddEvent,
+}: {
+  date: Date;
+  events: EventT[];
+  tasks: TaskT[];
+  onClose: () => void;
+  onDelete: (id: string) => void;
+  onToggleTask: (t: TaskT) => void;
+  onAddEvent: (d: Date) => void;
+}) {
+  const { dict } = useTranslation();
+  const sortedEvents = [...events].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const priorityLabel = (p: number) => (p >= 3 ? "High" : p === 2 ? "Medium" : "Low");
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/30 sm:items-center sm:px-4" onClick={onClose}>
+      <div
+        className="card max-h-[85vh] w-full overflow-y-auto rounded-b-none sm:max-w-md sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-serif text-lg">{format(date, "EEEE, MMM d")}</h3>
+          <button onClick={onClose} aria-label={dict.pages.calendar.close}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-medium text-ink-light">{dict.pages.calendar.events}</p>
+            <button onClick={() => onAddEvent(date)} className="flex items-center gap-1 text-xs text-sage-600 hover:underline">
+              <Plus size={12} /> {dict.pages.calendar.addEvent}
+            </button>
+          </div>
+          {sortedEvents.length === 0 && <p className="text-xs text-ink-light">{dict.pages.calendar.noEvents}</p>}
+          <ul className="space-y-1.5">
+            {sortedEvents.map((e) => {
+              const deletable = !e.id.startsWith("cd-") && !e.id.startsWith("bday-");
+              return (
+                <li key={e.id} className="flex items-center justify-between rounded-lg bg-sage-50 px-2.5 py-1.5">
+                  <div>
+                    <p className="text-sm font-medium">{e.title}</p>
+                    <p className="text-[11px] text-ink-light">
+                      {e.allDay ? dict.pages.calendar.allDay : format(new Date(e.startsAt), "h:mm a")}
+                      {e.location ? ` · ${e.location}` : ""}
+                    </p>
+                  </div>
+                  {deletable && (
+                    <button onClick={() => onDelete(e.id)} className="text-ink-light hover:text-red-500">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-medium text-ink-light">{dict.pages.calendar.tasksDue}</p>
+            <Link href="/tasks" className="text-xs text-sage-600 hover:underline">
+              {dict.pages.calendar.viewAllTasks}
+            </Link>
+          </div>
+          {tasks.length === 0 && <p className="text-xs text-ink-light">{dict.pages.calendar.noTasksDue}</p>}
+          <ul className="space-y-1.5">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 rounded-lg bg-amber-50 px-2.5 py-1.5">
+                <input type="checkbox" checked={t.completed} onChange={() => onToggleTask(t)} />
+                <Link href="/tasks" className="flex-1 min-w-0">
+                  <p className={cn("truncate text-sm", t.completed && "text-ink-light line-through")}>{t.title}</p>
+                </Link>
+                <span className="shrink-0 rounded-full bg-amber-200 px-2 py-0.5 text-[10px] text-amber-800">
+                  {priorityLabel(t.priority)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
