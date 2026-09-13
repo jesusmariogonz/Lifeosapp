@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { CheckCircle2, Circle, Trash2, Plus } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, dateOnlyToLocal } from "@/lib/utils";
 
 type Task = {
   id: string;
@@ -111,7 +111,7 @@ export default function TasksClient() {
                     {t.title}
                   </p>
                   <p className="text-xs text-ink-light">
-                    {t.dueDate ? format(new Date(t.dueDate), "MMM d") : "No due date"} ·{" "}
+                    {t.dueDate ? format(dateOnlyToLocal(t.dueDate), "MMM d") : "No due date"} ·{" "}
                     {t.priority === 1 ? "High" : t.priority === 2 ? "Medium" : "Low"}
                   </p>
                 </div>

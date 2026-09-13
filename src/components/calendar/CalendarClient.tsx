@@ -17,7 +17,7 @@ import {
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, dateOnlyToLocal } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type EventT = {
@@ -100,10 +100,16 @@ export default function CalendarClient() {
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(new Date());
   const [modalDate, setModalDate] = useState<Date | null>(null);
+  const [detailDate, setDetailDate] = useState<Date | null>(null);
 
   const { data: events } = useQuery<EventT[]>({
     queryKey: ["events"],
     queryFn: () => apiFetch("/api/events"),
+  });
+
+  const { data: tasksData } = useQuery<TaskT[]>({
+    queryKey: ["tasks"],
+    queryFn: () => apiFetch("/api/tasks"),
   });
 
   const { data: contacts } = useQuery<Contact[]>({
@@ -136,6 +142,12 @@ export default function CalendarClient() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["events"] }),
   });
 
+  const toggleTask = useMutation({
+    mutationFn: (t: TaskT) =>
+      apiFetch(`/api/tasks/${t.id}`, { method: "PATCH", body: JSON.stringify({ completed: !t.completed }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+
   function handleDelete(id: string) {
     if (id.startsWith("cd-") || id.startsWith("bday-")) return; // synthetic recurring dates aren't deletable here
     deleteEvent.mutate(id);
@@ -155,6 +167,8 @@ export default function CalendarClient() {
   }
 
   const eventsFor = (day: Date) => allEvents.filter((e) => isSameDay(new Date(e.startsAt), day));
+  const tasksFor = (day: Date) =>
+    (tasksData || []).filter((t) => t.dueDate && isSameDay(dateOnlyToLocal(t.dueDate), day));
 
   return (
     <div className="space-y-4">
@@ -187,12 +201,30 @@ export default function CalendarClient() {
       </div>
 
       {view === "month" && (
-        <MonthView cursor={cursor} eventsFor={eventsFor} onDayClick={setModalDate} />
+        <MonthView cursor={cursor} eventsFor={eventsFor} tasksFor={tasksFor} onDayClick={setDetailDate} />
       )}
-      {view === "week" && <WeekView cursor={cursor} eventsFor={eventsFor} onDayClick={setModalDate} onDelete={handleDelete} />}
-      {view === "day" && <DayView cursor={cursor} eventsFor={eventsFor} onDelete={handleDelete} />}
+      {view === "week" && (
+        <WeekView cursor={cursor} eventsFor={eventsFor} tasksFor={tasksFor} onDayClick={setDetailDate} onDelete={handleDelete} />
+      )}
+      {view === "day" && (
+        <DayView cursor={cursor} eventsFor={eventsFor} tasksFor={tasksFor} onDelete={handleDelete} onToggleTask={toggleTask.mutate} />
+      )}
 
       {modalDate && <EventModal date={modalDate} onClose={() => setModalDate(null)} />}
+      {detailDate && (
+        <DayDetailModal
+          date={detailDate}
+          events={eventsFor(detailDate)}
+          tasks={tasksFor(detailDate)}
+          onClose={() => setDetailDate(null)}
+          onDelete={handleDelete}
+          onToggleTask={toggleTask.mutate}
+          onAddEvent={(d) => {
+            setDetailDate(null);
+            setModalDate(d);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -200,10 +232,12 @@ export default function CalendarClient() {
 function MonthView({
   cursor,
   eventsFor,
+  tasksFor,
   onDayClick,
 }: {
   cursor: Date;
   eventsFor: (d: Date) => EventT[];
+  tasksFor: (d: Date) => TaskT[];
   onDayClick: (d: Date) => void;
 }) {
   const start = startOfWeek(startOfMonth(cursor));
@@ -227,6 +261,11 @@ function MonthView({
       <div className="grid min-w-[600px] grid-cols-7 gap-1">
         {days.map((day) => {
           const dayEvents = eventsFor(day);
+          const dayTasks = tasksFor(day);
+          const items = [
+            ...dayEvents.map((e) => ({ id: e.id, title: e.title, kind: "event" as const })),
+            ...dayTasks.map((t) => ({ id: t.id, title: t.title, kind: "task" as const })),
+          ];
           return (
             <button
               key={day.toISOString()}
@@ -237,14 +276,26 @@ function MonthView({
                 isSameDay(day, new Date()) && "border-sage-400 bg-sage-50"
               )}
             >
-              <span className="text-xs font-medium">{format(day, "d")}</span>
+              <div className="flex w-full items-center justify-between">
+                <span className="text-xs font-medium">{format(day, "d")}</span>
+                <div className="flex items-center gap-0.5">
+                  {dayEvents.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-sage-400" />}
+                  {dayTasks.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                </div>
+              </div>
               <div className="mt-1 w-full space-y-0.5">
-                {dayEvents.slice(0, 2).map((e) => (
-                  <div key={e.id} className="truncate rounded bg-sage-200 px-1 py-0.5 text-[10px] text-sage-700">
-                    {e.title}
+                {items.slice(0, 2).map((it) => (
+                  <div
+                    key={it.id}
+                    className={cn(
+                      "truncate rounded px-1 py-0.5 text-[10px]",
+                      it.kind === "event" ? "bg-sage-200 text-sage-700" : "bg-amber-100 text-amber-800"
+                    )}
+                  >
+                    {it.title}
                   </div>
                 ))}
-                {dayEvents.length > 2 && <div className="text-[10px] text-ink-light">+{dayEvents.length - 2} more</div>}
+                {items.length > 2 && <div className="text-[10px] text-ink-light">+{items.length - 2} more</div>}
               </div>
             </button>
           );
@@ -257,11 +308,13 @@ function MonthView({
 function WeekView({
   cursor,
   eventsFor,
+  tasksFor,
   onDayClick,
   onDelete,
 }: {
   cursor: Date;
   eventsFor: (d: Date) => EventT[];
+  tasksFor: (d: Date) => TaskT[];
   onDayClick: (d: Date) => void;
   onDelete: (id: string) => void;
 }) {
@@ -269,29 +322,51 @@ function WeekView({
   const days = Array.from({ length: 7 }).map((_, i) => addDays(start, i));
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {days.map((day) => (
-        <div key={day.toISOString()} className="card">
-          <div className="mb-2 flex items-center justify-between">
-            <p className={cn("font-medium", isSameDay(day, new Date()) && "text-sage-600")}>{format(day, "EEE d")}</p>
-            <button onClick={() => onDayClick(day)} className="text-ink-light hover:text-sage-500">
-              <Plus size={16} />
-            </button>
+      {days.map((day) => {
+        const dayTasks = tasksFor(day);
+        return (
+          <div
+            key={day.toISOString()}
+            role="button"
+            tabIndex={0}
+            onClick={() => onDayClick(day)}
+            onKeyDown={(e) => e.key === "Enter" && onDayClick(day)}
+            className="card cursor-pointer text-left"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <p className={cn("font-medium", isSameDay(day, new Date()) && "text-sage-600")}>{format(day, "EEE d")}</p>
+              <div className="flex items-center gap-1">
+                {eventsFor(day).length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-sage-400" />}
+                {dayTasks.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+              </div>
+            </div>
+            <ul className="space-y-1">
+              {eventsFor(day).map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-center justify-between rounded bg-cream-100 px-2 py-1 text-xs"
+                  onClick={(ev) => ev.stopPropagation()}
+                >
+                  <span>
+                    {e.allDay ? "All day" : format(new Date(e.startsAt), "h:mm a")} — {e.title}
+                  </span>
+                  <button onClick={() => onDelete(e.id)} className="text-ink-light hover:text-red-500">
+                    <Trash2 size={12} />
+                  </button>
+                </li>
+              ))}
+              {dayTasks.map((t) => (
+                <li key={t.id} className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                  <span className={cn(t.completed && "text-ink-light line-through")}>{t.title}</span>
+                </li>
+              ))}
+              {eventsFor(day).length === 0 && dayTasks.length === 0 && (
+                <li className="text-xs text-ink-light">No events</li>
+              )}
+            </ul>
           </div>
-          <ul className="space-y-1">
-            {eventsFor(day).map((e) => (
-              <li key={e.id} className="flex items-center justify-between rounded bg-cream-100 px-2 py-1 text-xs">
-                <span>
-                  {e.allDay ? "All day" : format(new Date(e.startsAt), "h:mm a")} — {e.title}
-                </span>
-                <button onClick={() => onDelete(e.id)} className="text-ink-light hover:text-red-500">
-                  <Trash2 size={12} />
-                </button>
-              </li>
-            ))}
-            {eventsFor(day).length === 0 && <li className="text-xs text-ink-light">No events</li>}
-          </ul>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -299,32 +374,51 @@ function WeekView({
 function DayView({
   cursor,
   eventsFor,
+  tasksFor,
   onDelete,
+  onToggleTask,
 }: {
   cursor: Date;
   eventsFor: (d: Date) => EventT[];
+  tasksFor: (d: Date) => TaskT[];
   onDelete: (id: string) => void;
+  onToggleTask: (t: TaskT) => void;
 }) {
   const dayEvents = eventsFor(cursor).sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const dayTasks = tasksFor(cursor);
   return (
-    <div className="card">
-      <ul className="divide-y divide-cream-300">
-        {dayEvents.map((e) => (
-          <li key={e.id} className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium">{e.title}</p>
-              <p className="text-xs text-ink-light">
-                {e.allDay ? "All day" : `${format(new Date(e.startsAt), "h:mm a")} - ${format(new Date(e.endsAt), "h:mm a")}`}
-                {e.location ? ` · ${e.location}` : ""}
-              </p>
-            </div>
-            <button onClick={() => onDelete(e.id)} className="text-ink-light hover:text-red-500">
-              <Trash2 size={16} />
-            </button>
-          </li>
-        ))}
-        {dayEvents.length === 0 && <p className="py-4 text-sm text-ink-light">No events today.</p>}
-      </ul>
+    <div className="space-y-3">
+      <div className="card">
+        <ul className="divide-y divide-cream-300">
+          {dayEvents.map((e) => (
+            <li key={e.id} className="flex items-center justify-between py-3">
+              <div>
+                <p className="font-medium">{e.title}</p>
+                <p className="text-xs text-ink-light">
+                  {e.allDay ? "All day" : `${format(new Date(e.startsAt), "h:mm a")} - ${format(new Date(e.endsAt), "h:mm a")}`}
+                  {e.location ? ` · ${e.location}` : ""}
+                </p>
+              </div>
+              <button onClick={() => onDelete(e.id)} className="text-ink-light hover:text-red-500">
+                <Trash2 size={16} />
+              </button>
+            </li>
+          ))}
+          {dayEvents.length === 0 && <p className="py-4 text-sm text-ink-light">No events today.</p>}
+        </ul>
+      </div>
+      <div className="card">
+        <p className="mb-2 text-sm font-medium text-ink-light">Tasks due</p>
+        <ul className="divide-y divide-cream-300">
+          {dayTasks.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 py-2">
+              <input type="checkbox" checked={t.completed} onChange={() => onToggleTask(t)} />
+              <span className={cn("text-sm", t.completed && "text-ink-light line-through")}>{t.title}</span>
+            </li>
+          ))}
+          {dayTasks.length === 0 && <p className="py-2 text-sm text-ink-light">No tasks due today.</p>}
+        </ul>
+      </div>
     </div>
   );
 }
