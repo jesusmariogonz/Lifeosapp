@@ -21,7 +21,14 @@ export async function runSeed(prisma: PrismaClient) {
   await prisma.user.deleteMany({ where: { email } });
 
   const user = await prisma.user.create({
-    data: { email, name: "Demo User", passwordHash },
+    data: {
+      email,
+      name: "Demo User",
+      passwordHash,
+      timezone: "America/Mexico_City",
+      currency: "MXN",
+      theme: "light",
+    },
   });
 
   const today = daysAgo(0);

@@ -126,7 +126,7 @@ export default function CalendarClient() {
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={cn("px-3 py-1.5 text-sm capitalize", view === v ? "bg-sage-400 text-white" : "bg-white")}
+                className={cn("px-3 py-1.5 text-sm capitalize", view === v ? "bg-sage-400 text-white" : "bg-surface")}
               >
                 {v}
               </button>

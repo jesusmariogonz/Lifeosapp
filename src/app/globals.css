@@ -2,19 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme system: every color token used across the app (cream/sage/ink/surface)
+ * resolves to a CSS custom property here, switched by [data-theme] on <html>.
+ * Components never hardcode theme colors — they use the Tailwind tokens
+ * (bg-cream-200, text-sage-600, etc.) which read these variables, so adding a
+ * theme only means adding a variable block, not touching every component.
+ *
+ * Values are "R G B" triplets (no rgb() wrapper) so Tailwind can apply
+ * opacity modifiers via rgb(var(--x) / <alpha-value>).
+ */
+:root {
+  /* Light (default) — the original cream/sage Life Planner palette */
+  --color-cream-50: 253 252 250;
+  --color-cream-100: 250 248 243;
+  --color-cream-200: 243 239 227;
+  --color-cream-300: 234 227 208;
+
+  --color-sage-50: 242 245 238;
+  --color-sage-100: 227 233 218;
+  --color-sage-200: 201 213 185;
+  --color-sage-300: 174 189 151;
+  --color-sage-400: 138 154 126;
+  --color-sage-500: 114 133 101;
+  --color-sage-600: 91 107 80;
+  --color-sage-700: 72 84 64;
+
+  --color-ink: 47 44 38;
+  --color-ink-light: 107 101 88;
+
+  --color-surface: 255 255 255;
+}
+
+/* Night — dark background, warm orange accent in place of sage */
+:root[data-theme="night"] {
+  --color-cream-50: 45 42 37;
+  --color-cream-100: 26 24 21;
+  --color-cream-200: 41 38 33;
+  --color-cream-300: 62 57 49;
+
+  --color-sage-50: 74 48 30;
+  --color-sage-100: 94 56 28;
+  --color-sage-200: 138 74 30;
+  --color-sage-300: 189 100 40;
+  --color-sage-400: 224 122 42;
+  --color-sage-500: 197 100 30;
+  --color-sage-600: 168 84 26;
+  --color-sage-700: 130 64 20;
+
+  --color-ink: 240 236 228;
+  --color-ink-light: 176 168 152;
+
+  --color-surface: 38 35 31;
+}
+
+/* Calm Blue — cool, soft blue-toned palette */
+:root[data-theme="calm"] {
+  --color-cream-50: 250 251 253;
+  --color-cream-100: 243 247 251;
+  --color-cream-200: 228 236 245;
+  --color-cream-300: 205 219 235;
+
+  --color-sage-50: 235 242 250;
+  --color-sage-100: 214 229 245;
+  --color-sage-200: 179 205 235;
+  --color-sage-300: 140 175 217;
+  --color-sage-400: 91 138 196;
+  --color-sage-500: 70 112 168;
+  --color-sage-600: 55 90 138;
+  --color-sage-700: 42 70 108;
+
+  --color-ink: 30 38 48;
+  --color-ink-light: 90 102 118;
+
+  --color-surface: 255 255 255;
+}
+
 html,
 body {
-  background-color: #faf8f3;
-  color: #2f2c26;
+  background-color: rgb(var(--color-cream-100));
+  color: rgb(var(--color-ink));
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #c9d5b9 transparent;
+  scrollbar-color: rgb(var(--color-sage-200)) transparent;
 }
 
 .card {
-  @apply bg-white/80 rounded-2xl shadow-soft border border-cream-300/60 p-5;
+  @apply bg-surface/80 rounded-2xl shadow-soft border border-cream-300/60 p-5;
 }
 
 .btn-primary {
@@ -26,7 +102,7 @@ body {
 }
 
 .input {
-  @apply w-full rounded-xl border border-cream-300 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-light focus:border-sage-400 focus:outline-none focus:ring-1 focus:ring-sage-400;
+  @apply w-full rounded-xl border border-cream-300 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-light focus:border-sage-400 focus:outline-none focus:ring-1 focus:ring-sage-400;
 }
 
 .label {

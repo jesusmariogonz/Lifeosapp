@@ -15,5 +15,6 @@ export const config = {
     "/assistant/:path*",
     "/relationships/:path*",
     "/integrations/:path*",
+    "/settings/:path*",
   ],
 };

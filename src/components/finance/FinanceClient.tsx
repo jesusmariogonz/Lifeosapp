@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 type Account = { id: string; name: string; type: string; balance: number };
 type Transaction = {
@@ -27,6 +28,8 @@ export default function FinanceClient() {
     queryFn: () => apiFetch("/api/finance/transactions"),
   });
   const { data: budgets } = useQuery<BudgetT[]>({ queryKey: ["budgets"], queryFn: () => apiFetch("/api/finance/budgets") });
+  const { data: settings } = useQuery<{ currency: string }>({ queryKey: ["settings"], queryFn: () => apiFetch("/api/settings") });
+  const currency = settings?.currency || DEFAULT_CURRENCY;
 
   const [accName, setAccName] = useState("");
   const [accType, setAccType] = useState("checking");
@@ -83,7 +86,7 @@ export default function FinanceClient() {
     <div className="space-y-5">
       <div className="card">
         <p className="text-sm text-ink-light">Total balance</p>
-        <p className="font-serif text-3xl text-sage-600">${totalBalance.toFixed(2)}</p>
+        <p className="font-serif text-3xl text-sage-600">{formatCurrency(totalBalance, currency)}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -93,7 +96,7 @@ export default function FinanceClient() {
             {(accounts || []).map((a) => (
               <li key={a.id} className="flex justify-between text-sm">
                 <span>{a.name} <span className="text-ink-light">({a.type})</span></span>
-                <span className={cn(a.balance < 0 && "text-red-500")}>${a.balance.toFixed(2)}</span>
+                <span className={cn(a.balance < 0 && "text-red-500")}>{formatCurrency(a.balance, currency)}</span>
               </li>
             ))}
             {(accounts || []).length === 0 && <p className="text-sm text-ink-light">No accounts yet.</p>}
@@ -124,7 +127,7 @@ export default function FinanceClient() {
             {(budgets || []).map((b) => (
               <li key={b.id} className="flex justify-between text-sm">
                 <span>{b.category}</span>
-                <span>${b.monthlyLimit.toFixed(2)}/mo</span>
+                <span>{formatCurrency(b.monthlyLimit, currency)}/mo</span>
               </li>
             ))}
             {(budgets || []).length === 0 && <p className="text-sm text-ink-light">No budgets yet.</p>}
@@ -178,7 +181,7 @@ export default function FinanceClient() {
                 {t.category} · {format(new Date(t.date), "MMM d")}
               </span>
               <span className={t.isIncome ? "text-sage-600" : "text-red-500"}>
-                {t.isIncome ? "+" : "-"}${t.amount.toFixed(2)}
+                {t.isIncome ? "+" : "-"}{formatCurrency(t.amount, currency)}
               </span>
             </li>
           ))}

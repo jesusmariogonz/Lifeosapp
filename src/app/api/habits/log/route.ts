@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
-import { toDateOnly } from "@/lib/utils";
+import { getUserTimezone, toDateOnlyInTimeZone } from "@/lib/tz";
 
 // Toggle a habit's completion for a given date
 export async function POST(req: Request) {
@@ -11,7 +11,8 @@ export async function POST(req: Request) {
   const habit = await prisma.habit.findFirst({ where: { id: body.habitId, userId } });
   if (!habit) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const date = toDateOnly(body.date ? new Date(body.date) : new Date());
+  const timezone = await getUserTimezone(userId);
+  const date = toDateOnlyInTimeZone(body.date ? new Date(body.date) : new Date(), timezone);
   const existing = await prisma.habitLog.findUnique({
     where: { habitId_date: { habitId: habit.id, date } },
   });

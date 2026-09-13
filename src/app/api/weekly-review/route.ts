@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
-import { startOfWeekMonday } from "@/lib/utils";
+import { getUserTimezone, startOfWeekMondayInTimeZone } from "@/lib/tz";
 
 // V3: AI planning assistant hook (weekly review is the natural input for an AI planner)
 export async function GET() {
@@ -18,7 +18,8 @@ export async function POST(req: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
-  const weekStart = startOfWeekMonday(body.weekStart ? new Date(body.weekStart) : new Date());
+  const timezone = await getUserTimezone(userId);
+  const weekStart = startOfWeekMondayInTimeZone(body.weekStart ? new Date(body.weekStart) : new Date(), timezone);
 
   const review = await prisma.weeklyReview.upsert({
     where: { userId_weekStart: { userId, weekStart } },

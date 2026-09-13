@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
-import { startOfWeekMonday, toDateOnly } from "@/lib/utils";
+import { getUserTimezone, startOfWeekMondayInTimeZone, toDateOnlyInTimeZone } from "@/lib/tz";
 
 // V2: cross-area analytics — real aggregates computed from user data, no mock data
 export async function GET() {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const today = toDateOnly(new Date());
+  const timezone = await getUserTimezone(userId);
+  const today = toDateOnlyInTimeZone(new Date(), timezone);
   const weeksBack = 10;
   const rangeStart = new Date(today);
   rangeStart.setDate(rangeStart.getDate() - weeksBack * 7);
@@ -28,7 +29,7 @@ export async function GET() {
   // Habit completion trend: weekly % of possible completions logged
   const habitWeeks: { weekStart: string; percent: number }[] = [];
   for (let i = weeksBack - 1; i >= 0; i--) {
-    const ws = startOfWeekMonday(new Date(today.getTime() - i * 7 * 86400000));
+    const ws = startOfWeekMondayInTimeZone(new Date(today.getTime() - i * 7 * 86400000), timezone);
     const we = new Date(ws.getTime() + 7 * 86400000);
     const possible = habits.length * 7;
     const completed = habitLogs.filter((l) => l.date >= ws && l.date < we && l.completed).length;
@@ -41,7 +42,7 @@ export async function GET() {
   // Task velocity: completed vs created per week
   const taskWeeks: { weekStart: string; created: number; completed: number }[] = [];
   for (let i = weeksBack - 1; i >= 0; i--) {
-    const ws = startOfWeekMonday(new Date(today.getTime() - i * 7 * 86400000));
+    const ws = startOfWeekMondayInTimeZone(new Date(today.getTime() - i * 7 * 86400000), timezone);
     const we = new Date(ws.getTime() + 7 * 86400000);
     const created = tasks.filter((t) => t.createdAt >= ws && t.createdAt < we).length;
     const completed = tasks.filter((t) => t.completedAt && t.completedAt >= ws && t.completedAt < we).length;

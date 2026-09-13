@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { toDateOnly } from "@/lib/utils";
+import { getUserTimezone, localDayRangeUtc } from "@/lib/tz";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 
 // V2: cross-area analytics hook (dashboard is where cross-module rollups will surface)
@@ -9,11 +9,12 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const userId = (session!.user as any).id as string;
 
-  const today = toDateOnly(new Date());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const timezone = await getUserTimezone(userId);
+  // "Today" is computed in the user's own timezone, not server (UTC) time —
+  // e.g. 11pm local in America/Mexico_City is already the next UTC day, but
+  // must still resolve to today's local calendar date for this user's queries.
+  const { start: today, end: tomorrow } = localDayRangeUtc(timezone);
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
   const [user, events, tasks, habits, habitLogsToday, yesterdayWellness, todayJournal, contacts] =
     await Promise.all([

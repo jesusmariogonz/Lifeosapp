@@ -24,6 +24,9 @@ model User {
   passwordHash  String?
   name          String?
   image         String?
+  timezone      String   @default("UTC")
+  currency      String   @default("USD")
+  theme         String   @default("light")
   createdAt     DateTime @default(now())
 
   events         Event[]

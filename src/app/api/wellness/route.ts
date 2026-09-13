@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
-import { toDateOnly } from "@/lib/utils";
+import { getUserTimezone, toDateOnlyInTimeZone } from "@/lib/tz";
 
 // V2: cross-area analytics hook (wellness feeds dashboard + weekly review rollups)
 export async function GET() {
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
-  const date = toDateOnly(body.date ? new Date(body.date) : new Date());
+  const timezone = await getUserTimezone(userId);
+  const date = toDateOnlyInTimeZone(body.date ? new Date(body.date) : new Date(), timezone);
   const log = await prisma.wellnessLog.upsert({
     where: { userId_date: { userId, date } },
     update: {

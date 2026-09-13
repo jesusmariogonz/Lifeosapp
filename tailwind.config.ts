@@ -1,31 +1,39 @@
 import type { Config } from "tailwindcss";
 
+function withOpacity(varName: string) {
+  return `rgb(var(${varName}) / <alpha-value>)`;
+}
+
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
+        // Color tokens resolve to CSS custom properties (set per data-theme in
+        // globals.css) so switching themes re-colors the whole app without
+        // touching individual component classNames.
         cream: {
-          DEFAULT: "#faf8f3",
-          50: "#fdfcfa",
-          100: "#faf8f3",
-          200: "#f3efe3",
-          300: "#eae3d0",
+          DEFAULT: withOpacity("--color-cream-100"),
+          50: withOpacity("--color-cream-50"),
+          100: withOpacity("--color-cream-100"),
+          200: withOpacity("--color-cream-200"),
+          300: withOpacity("--color-cream-300"),
         },
         sage: {
-          50: "#f2f5ee",
-          100: "#e3e9da",
-          200: "#c9d5b9",
-          300: "#aebd97",
-          400: "#8a9a7e",
-          500: "#728565",
-          600: "#5b6b50",
-          700: "#485440",
+          50: withOpacity("--color-sage-50"),
+          100: withOpacity("--color-sage-100"),
+          200: withOpacity("--color-sage-200"),
+          300: withOpacity("--color-sage-300"),
+          400: withOpacity("--color-sage-400"),
+          500: withOpacity("--color-sage-500"),
+          600: withOpacity("--color-sage-600"),
+          700: withOpacity("--color-sage-700"),
         },
         ink: {
-          DEFAULT: "#2f2c26",
-          light: "#6b6558",
+          DEFAULT: withOpacity("--color-ink"),
+          light: withOpacity("--color-ink-light"),
         },
+        surface: withOpacity("--color-surface"),
       },
       fontFamily: {
         serif: ["var(--font-fraunces)", "Georgia", "serif"],

@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { apiFetch } from "@/lib/api";
 import { format } from "date-fns";
+import { formatCurrency, DEFAULT_CURRENCY } from "@/lib/currency";
 
 type Analytics = {
   habitWeeks: { weekStart: string; percent: number }[];
@@ -65,6 +66,8 @@ export default function AnalyticsClient() {
     queryKey: ["analytics"],
     queryFn: () => apiFetch("/api/analytics"),
   });
+  const { data: settings } = useQuery<{ currency: string }>({ queryKey: ["settings"], queryFn: () => apiFetch("/api/settings") });
+  const currency = settings?.currency || DEFAULT_CURRENCY;
 
   if (isLoading || !data) {
     return <p className="text-sm text-ink-light">Loading analytics...</p>;
@@ -134,7 +137,7 @@ export default function AnalyticsClient() {
               <CartesianGrid strokeDasharray="3 3" stroke="#eae3d0" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6b6558" }} />
               <YAxis tick={{ fontSize: 11, fill: "#6b6558" }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `$${Number(v).toLocaleString()}`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => formatCurrency(Number(v), currency)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="income" fill={SAGE} radius={[4, 4, 0, 0]} name="Income" />
               <Bar dataKey="expenses" fill={AMBER} radius={[4, 4, 0, 0]} name="Expenses" />
@@ -150,7 +153,7 @@ export default function AnalyticsClient() {
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `$${Number(v).toLocaleString()}`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => formatCurrency(Number(v), currency)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
