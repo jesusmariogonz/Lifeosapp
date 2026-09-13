@@ -52,9 +52,11 @@ function contactDateOccurrences(contacts: Contact[], year: number): EventT[] {
   for (const c of contacts) {
     for (const d of c.importantDates) {
       const orig = new Date(d.date);
-      const occursYear = d.recurring ? year : orig.getFullYear();
+      // Stored as a date-only value (midnight UTC) — read month/day/year in
+      // UTC so the calendar date doesn't shift with the viewer's timezone.
+      const occursYear = d.recurring ? year : orig.getUTCFullYear();
       if (d.recurring || occursYear === year) {
-        const occ = new Date(occursYear, orig.getMonth(), orig.getDate());
+        const occ = new Date(occursYear, orig.getUTCMonth(), orig.getUTCDate());
         occurrences.push({
           id: `cd-${d.id}-${occursYear}`,
           title: `${d.label}: ${c.name}`,
@@ -76,8 +78,10 @@ function birthdayOccurrences(birthday: string | null | undefined, years: number[
   if (!birthday) return [];
   const orig = new Date(birthday);
   if (isNaN(orig.getTime())) return [];
+  // Stored as a date-only value (midnight UTC) — read month/day in UTC so
+  // the calendar date doesn't shift with the viewer's timezone.
   return years.map((year) => {
-    const occ = new Date(year, orig.getMonth(), orig.getDate());
+    const occ = new Date(year, orig.getUTCMonth(), orig.getUTCDate());
     return {
       id: `bday-${year}`,
       title: label,

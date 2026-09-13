@@ -10,5 +10,8 @@ export function nextOccurrence(monthDay: { month: number; day: number }, from: D
 // Convenience wrapper for callers that have a Date to pull month/day off of
 // (e.g. a stored DateTime column) rather than raw numbers.
 export function nextOccurrenceOf(original: Date, from: Date): Date {
-  return nextOccurrence({ month: original.getMonth(), day: original.getDate() }, from);
+  // Stored as a date-only value (midnight UTC) — read month/day in UTC so the
+  // calendar date doesn't shift depending on which timezone this code runs in
+  // (server is UTC, but this is also called client-side in the browser).
+  return nextOccurrence({ month: original.getUTCMonth(), day: original.getUTCDate() }, from);
 }
