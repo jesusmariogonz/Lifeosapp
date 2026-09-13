@@ -37,6 +37,7 @@ A calm, all-in-one personal life-management app: dashboard, calendar, tasks, hab
 
    Required env vars:
    - `DATABASE_URL` — PostgreSQL connection string
+   - `DATABASE_URL_UNPOOLED` — a direct (non-pooled) connection string, used only for running migrations. On Vercel + Neon this is auto-created alongside `DATABASE_URL`; migrations time out trying to take an advisory lock against a pooled/pgbouncer URL, so this must point at the direct connection. Locally, the same value as `DATABASE_URL` is fine.
    - `NEXTAUTH_SECRET` — any random string (`openssl rand -base64 32`)
    - `NEXTAUTH_URL` — e.g. `http://localhost:3000`
 

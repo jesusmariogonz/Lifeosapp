@@ -3,8 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Migrations need a direct (non-pooled) connection — Prisma's advisory
+  // lock during `migrate deploy` hangs/times out against pgbouncer/Neon's
+  // pooled connection string. Falls back to DATABASE_URL locally where
+  // there's no separate pooled/unpooled split.
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 enum HabitFrequency {
