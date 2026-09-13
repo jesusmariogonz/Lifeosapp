@@ -162,6 +162,7 @@ const es: typeof en = {
       saveChanges: "Guardar cambios",
       cancelEdit: "Cancelar",
       recurrenceLockedForSeries: "Esta tarea ya es parte de una serie recurrente — su patrón de repetición no se puede cambiar aquí.",
+      markPriority: "Marcar como prioridad de hoy",
     },
     goals: { title: "Metas y Visión", addGoal: "Agregar meta", empty: "Aún no hay metas." },
     habits: { title: "Hábitos", addHabit: "Agregar hábito", empty: "Aún no hay hábitos." },

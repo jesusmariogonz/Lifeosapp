@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CheckCircle2, Circle, Trash2, Plus, Repeat, ChevronUp, ChevronDown, Pencil, X } from "lucide-react";
+import { CheckCircle2, Circle, Trash2, Plus, Repeat, ChevronUp, ChevronDown, Pencil, X, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn, dateOnlyToLocal } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
+import { usePrioritiesStore } from "@/store/priorities";
 
 type Task = {
   id: string;
@@ -35,6 +36,9 @@ export default function TasksClient() {
     queryKey: ["tasks"],
     queryFn: () => apiFetch("/api/tasks"),
   });
+  const { getPriorities, togglePriority } = usePrioritiesStore();
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const priorityIds = getPriorities(todayKey);
 
   const dayLabels: Record<number, string> = {
     1: t.dayMon,
@@ -277,6 +281,14 @@ export default function TasksClient() {
                     {task.priority === 1 ? t.priorityHigh : task.priority === 2 ? t.priorityMedium : t.priorityLow}
                   </p>
                 </div>
+                <button
+                  onClick={() => togglePriority(todayKey, task.id)}
+                  className={cn("shrink-0 text-ink-light hover:text-sage-500", priorityIds.includes(task.id) && "text-sage-500")}
+                  aria-label={t.markPriority}
+                  title={t.markPriority}
+                >
+                  <Star size={16} fill={priorityIds.includes(task.id) ? "currentColor" : "none"} />
+                </button>
                 <button onClick={() => postponeTask.mutate(task)} className="btn-secondary text-xs px-2 py-1">
                   {t.postpone}
                 </button>
