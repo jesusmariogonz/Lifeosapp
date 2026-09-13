@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
-type Objective = { id: string; title: string; description: string | null };
+type Objective = { id: string; title: string; description: string | null; completed: boolean };
 type Goal = { id: string; title: string; description: string | null; vision: string | null; objectives: Objective[] };
 
 export default function GoalsClient() {
@@ -41,6 +42,12 @@ export default function GoalsClient() {
       setObjectiveDrafts((s) => ({ ...s, [goalId]: "" }));
       queryClient.invalidateQueries({ queryKey: ["goals"] });
     },
+  });
+
+  const toggleObjective = useMutation({
+    mutationFn: (o: Objective) =>
+      apiFetch(`/api/objectives/${o.id}`, { method: "PATCH", body: JSON.stringify({ completed: !o.completed }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["goals"] }),
   });
 
   return (
@@ -82,8 +89,11 @@ export default function GoalsClient() {
               </div>
               <ul className="mb-2 space-y-1">
                 {g.objectives.map((o) => (
-                  <li key={o.id} className="text-sm text-ink-light">
-                    • {o.title}
+                  <li key={o.id} className="flex items-center gap-2 text-sm">
+                    <button onClick={() => toggleObjective.mutate(o)} className="shrink-0 text-sage-500">
+                      {o.completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                    </button>
+                    <span className={cn(o.completed ? "text-ink-light line-through" : "text-ink-light")}>{o.title}</span>
                   </li>
                 ))}
               </ul>

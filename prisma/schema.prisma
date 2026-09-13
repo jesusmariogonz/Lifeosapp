@@ -142,6 +142,7 @@ model Objective {
   goal          Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
   title         String
   description   String?
+  completed     Boolean  @default(false)
   createdAt     DateTime @default(now())
 
   tasks         Task[]
