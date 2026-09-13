@@ -19,6 +19,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { weatherCodeToCondition, type DailyPoint } from "@/lib/weather";
+import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type Location = {
   id: string;
@@ -52,6 +53,7 @@ function ConditionIcon({ code, size = 28, className }: { code: number | null; si
 }
 
 export default function WeatherCard() {
+  const { dict } = useTranslation();
   const queryClient = useQueryClient();
   const [adding, setAdding] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -69,23 +71,23 @@ export default function WeatherCard() {
   return (
     <div className="card md:col-span-1">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-serif text-lg text-ink">Weather</h2>
+        <h2 className="font-serif text-lg text-ink">{dict.dashboard.weather}</h2>
         <button
           onClick={() => setAdding(true)}
           className="text-ink-light hover:text-sage-500"
-          title="Add a location"
+          title={dict.dashboard.addLocation}
         >
           <Plus size={18} />
         </button>
       </div>
 
-      {isLoading && <p className="text-sm text-ink-light">Loading weather...</p>}
+      {isLoading && <p className="text-sm text-ink-light">{dict.dashboard.loadingWeather}</p>}
 
       {!isLoading && (!locations || locations.length === 0) && (
         <p className="text-sm text-ink-light">
-          Add a city to see the forecast.{" "}
+          {dict.dashboard.addCityPrompt}{" "}
           <button onClick={() => setAdding(true)} className="text-sage-600 underline">
-            Add one
+            {dict.dashboard.addOne}
           </button>
           .
         </p>

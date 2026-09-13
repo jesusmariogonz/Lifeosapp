@@ -27,6 +27,7 @@ model User {
   timezone      String   @default("UTC")
   currency      String   @default("USD")
   theme         String   @default("light")
+  locale        String   @default("en")
   createdAt     DateTime @default(now())
 
   events         Event[]

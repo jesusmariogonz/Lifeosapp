@@ -24,31 +24,33 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const NAV = [
-  { href: "/", label: "Today", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/habits", label: "Habits", icon: Repeat },
-];
-
-// Everything not pinned to the bottom bar lives behind "More" on mobile.
-const MORE_NAV = [
-  { href: "/goals", label: "Goals & Vision", icon: Target },
-  { href: "/finance", label: "Finance", icon: Wallet },
-  { href: "/wellness", label: "Wellness & Health", icon: HeartPulse },
-  { href: "/journal", label: "Journal", icon: BookOpen },
-  { href: "/weekly-review", label: "Weekly Review", icon: BarChart3 },
-  { href: "/analytics", label: "Analytics", icon: LineChart },
-  { href: "/assistant", label: "Assistant", icon: Sparkles },
-  { href: "/relationships", label: "Relationships", icon: Users },
-  { href: "/integrations", label: "Integrations", icon: Plug },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 export default function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { dict } = useTranslation();
+
+  const NAV = [
+    { href: "/", label: dict.nav.today, icon: LayoutDashboard },
+    { href: "/calendar", label: dict.nav.calendar, icon: Calendar },
+    { href: "/tasks", label: dict.nav.tasks, icon: CheckSquare },
+    { href: "/habits", label: dict.nav.habits, icon: Repeat },
+  ];
+
+  // Everything not pinned to the bottom bar lives behind "More" on mobile.
+  const MORE_NAV = [
+    { href: "/goals", label: dict.nav.goals, icon: Target },
+    { href: "/finance", label: dict.nav.finance, icon: Wallet },
+    { href: "/wellness", label: dict.nav.wellness, icon: HeartPulse },
+    { href: "/journal", label: dict.nav.journal, icon: BookOpen },
+    { href: "/weekly-review", label: dict.nav.weeklyReview, icon: BarChart3 },
+    { href: "/analytics", label: dict.nav.analytics, icon: LineChart },
+    { href: "/assistant", label: dict.nav.assistant, icon: Sparkles },
+    { href: "/relationships", label: dict.nav.relationships, icon: Users },
+    { href: "/integrations", label: dict.nav.integrations, icon: Plug },
+    { href: "/settings", label: dict.nav.settings, icon: Settings },
+  ];
   const moreActive = MORE_NAV.some(
     (item) => pathname === item.href || pathname?.startsWith(item.href)
   );
@@ -62,7 +64,7 @@ export default function MobileNav() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="font-serif text-lg text-ink">More</span>
+              <span className="font-serif text-lg text-ink">{dict.nav.more}</span>
               <button onClick={() => setOpen(false)} className="rounded-full p-1 text-ink-light hover:bg-cream-200">
                 <X size={20} />
               </button>
@@ -91,7 +93,7 @@ export default function MobileNav() {
                 className="flex flex-col items-center gap-1 rounded-xl px-2 py-3 text-center text-xs text-ink-light hover:bg-cream-200 hover:text-ink"
               >
                 <LogOut size={20} />
-                <span>Log out</span>
+                <span>{dict.nav.logout}</span>
               </button>
             </div>
           </div>
@@ -124,7 +126,7 @@ export default function MobileNav() {
           )}
         >
           <Menu size={20} />
-          More
+          {dict.nav.more}
         </button>
       </nav>
     </>

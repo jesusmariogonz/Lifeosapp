@@ -21,26 +21,28 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const NAV = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/goals", label: "Goals & Vision", icon: Target },
-  { href: "/habits", label: "Habits", icon: Repeat },
-  { href: "/finance", label: "Finance", icon: Wallet },
-  { href: "/wellness", label: "Wellness & Health", icon: HeartPulse },
-  { href: "/journal", label: "Journal", icon: BookOpen },
-  { href: "/weekly-review", label: "Weekly Review", icon: BarChart3 },
-  { href: "/analytics", label: "Analytics", icon: LineChart },
-  { href: "/assistant", label: "Assistant", icon: Sparkles },
-  { href: "/relationships", label: "Relationships", icon: Users },
-  { href: "/integrations", label: "Integrations", icon: Plug },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { dict } = useTranslation();
+
+  const NAV = [
+    { href: "/", label: dict.nav.dashboard, icon: LayoutDashboard },
+    { href: "/calendar", label: dict.nav.calendar, icon: Calendar },
+    { href: "/tasks", label: dict.nav.tasks, icon: CheckSquare },
+    { href: "/goals", label: dict.nav.goals, icon: Target },
+    { href: "/habits", label: dict.nav.habits, icon: Repeat },
+    { href: "/finance", label: dict.nav.finance, icon: Wallet },
+    { href: "/wellness", label: dict.nav.wellness, icon: HeartPulse },
+    { href: "/journal", label: dict.nav.journal, icon: BookOpen },
+    { href: "/weekly-review", label: dict.nav.weeklyReview, icon: BarChart3 },
+    { href: "/analytics", label: dict.nav.analytics, icon: LineChart },
+    { href: "/assistant", label: dict.nav.assistant, icon: Sparkles },
+    { href: "/relationships", label: dict.nav.relationships, icon: Users },
+    { href: "/integrations", label: dict.nav.integrations, icon: Plug },
+    { href: "/settings", label: dict.nav.settings, icon: Settings },
+  ];
 
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col md:shrink-0 border-r border-cream-300/70 bg-cream-100/60 px-4 py-6">
@@ -73,7 +75,7 @@ export default function Sidebar() {
         className="mt-4 flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-ink-light hover:bg-cream-200 hover:text-ink"
       >
         <LogOut size={18} />
-        <span>Log out</span>
+        <span>{dict.nav.logout}</span>
       </button>
     </aside>
   );

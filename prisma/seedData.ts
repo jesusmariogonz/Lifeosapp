@@ -28,6 +28,7 @@ export async function runSeed(prisma: PrismaClient) {
       timezone: "America/Mexico_City",
       currency: "MXN",
       theme: "light",
+      locale: "es",
     },
   });
 

@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { es as esLocale } from "date-fns/locale";
 import { Star, CheckCircle2, Circle, Flame, Smile } from "lucide-react";
 import { usePrioritiesStore } from "@/store/priorities";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import WeatherCard from "@/components/dashboard/WeatherCard";
+import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type Task = { id: string; title: string; completed: boolean; priority: number; dueDate: string | null };
 type EventT = { id: string; title: string; startsAt: string; endsAt: string; allDay: boolean; location: string | null };
@@ -43,12 +45,15 @@ export default function DashboardClient({
   todayJournal: Journal;
   upcomingDates: UpcomingDate[];
 }) {
+  const { dict, locale } = useTranslation();
+  const dateFnsLocale = locale === "es" ? esLocale : undefined;
   const now = new Date();
   const todayKey = format(now, "yyyy-MM-dd");
   // Computed client-side (not passed from the server) so this reflects the
   // viewer's own local time rather than the server's (Vercel runs in UTC).
   const hour = now.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting =
+    hour < 12 ? dict.dashboard.greetingMorning : hour < 18 ? dict.dashboard.greetingAfternoon : dict.dashboard.greetingEvening;
   const hoursLeft = 24 - hour;
   const { getPriorities, togglePriority } = usePrioritiesStore();
   const priorityIds = getPriorities(todayKey);
@@ -86,7 +91,7 @@ export default function DashboardClient({
           {greeting}, {userName.split(" ")[0]}
         </h1>
         <p className="text-sm text-ink-light">
-          {format(now, "EEEE, MMMM d")} · {hoursLeft} hours left today
+          {format(now, "EEEE, MMMM d", { locale: dateFnsLocale })} · {hoursLeft} {dict.dashboard.hoursLeftToday}
         </p>
       </header>
 
@@ -96,14 +101,16 @@ export default function DashboardClient({
         {/* Today's priorities */}
         <div className="card md:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-serif text-lg text-ink">Today's Priorities</h2>
-            <span className="text-xs text-ink-light">{priorityIds.length}/3 selected</span>
+            <h2 className="font-serif text-lg text-ink">{dict.dashboard.todaysPriorities}</h2>
+            <span className="text-xs text-ink-light">
+              {priorityIds.length}/3 {dict.dashboard.selected}
+            </span>
           </div>
           {priorityTasks.length === 0 ? (
             <p className="text-sm text-ink-light">
-              Pick up to 3 priorities from your{" "}
+              {dict.dashboard.pickPriorities}{" "}
               <Link href="/tasks" className="text-sage-600 underline">
-                task list
+                {dict.dashboard.taskList}
               </Link>
               .
             </p>
@@ -123,16 +130,16 @@ export default function DashboardClient({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {/* Upcoming events */}
         <div className="card">
-          <h2 className="mb-3 font-serif text-lg text-ink">Upcoming Events</h2>
+          <h2 className="mb-3 font-serif text-lg text-ink">{dict.dashboard.upcomingEvents}</h2>
           {events.length === 0 ? (
-            <p className="text-sm text-ink-light">No events scheduled. Nice and clear.</p>
+            <p className="text-sm text-ink-light">{dict.dashboard.noEvents}</p>
           ) : (
             <ul className="space-y-3">
               {events.map((e) => (
                 <li key={e.id} className="border-l-2 border-sage-300 pl-3">
                   <p className="text-sm font-medium">{e.title}</p>
                   <p className="text-xs text-ink-light">
-                    {e.allDay ? "All day" : format(new Date(e.startsAt), "MMM d, h:mm a")}
+                    {e.allDay ? dict.dashboard.allDay : format(new Date(e.startsAt), "MMM d, h:mm a", { locale: dateFnsLocale })}
                   </p>
                 </li>
               ))}
@@ -140,24 +147,24 @@ export default function DashboardClient({
           )}
           {upcomingDates.length > 0 && (
             <div className="mt-3 space-y-1 border-t border-cream-300 pt-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-ink-light">Upcoming dates</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-light">{dict.dashboard.upcomingDates}</p>
               {upcomingDates.map((d, i) => (
                 <p key={i} className="text-xs text-ink-light">
-                  {d.label} — {d.contactName} · {format(new Date(d.next), "MMM d")}
+                  {d.label} — {d.contactName} · {format(new Date(d.next), "MMM d", { locale: dateFnsLocale })}
                 </p>
               ))}
             </div>
           )}
           <Link href="/calendar" className="mt-3 inline-block text-xs text-sage-600 underline">
-            Open calendar
+            {dict.dashboard.openCalendar}
           </Link>
         </div>
 
         {/* Today's tasks */}
         <div className="card">
-          <h2 className="mb-3 font-serif text-lg text-ink">Today's Tasks</h2>
+          <h2 className="mb-3 font-serif text-lg text-ink">{dict.dashboard.todaysTasks}</h2>
           {tasks.length === 0 ? (
-            <p className="text-sm text-ink-light">All caught up.</p>
+            <p className="text-sm text-ink-light">{dict.dashboard.allCaughtUp}</p>
           ) : (
             <ul className="space-y-2">
               {tasks.slice(0, 6).map((t) => {
@@ -186,15 +193,15 @@ export default function DashboardClient({
             </ul>
           )}
           <Link href="/tasks" className="mt-3 inline-block text-xs text-sage-600 underline">
-            View all tasks
+            {dict.dashboard.viewAllTasks}
           </Link>
         </div>
 
         {/* Today's habits */}
         <div className="card">
-          <h2 className="mb-3 font-serif text-lg text-ink">Habit Tracker</h2>
+          <h2 className="mb-3 font-serif text-lg text-ink">{dict.dashboard.habitTracker}</h2>
           {habits.length === 0 ? (
-            <p className="text-sm text-ink-light">No habits yet.</p>
+            <p className="text-sm text-ink-light">{dict.dashboard.noHabitsYet}</p>
           ) : (
             <ul className="space-y-2">
               {habits.map((h) => {
@@ -218,7 +225,7 @@ export default function DashboardClient({
             </ul>
           )}
           <Link href="/habits" className="mt-3 inline-block text-xs text-sage-600 underline">
-            Manage habits
+            {dict.dashboard.manageHabits}
           </Link>
         </div>
       </div>
@@ -226,37 +233,47 @@ export default function DashboardClient({
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {/* Yesterday wellness summary */}
         <div className="card">
-          <h2 className="mb-3 font-serif text-lg text-ink">Yesterday's Wellness</h2>
+          <h2 className="mb-3 font-serif text-lg text-ink">{dict.dashboard.yesterdaysWellness}</h2>
           {yesterdayWellness ? (
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <p>Sleep: {yesterdayWellness.sleepHours ?? "—"}h</p>
-              <p>Steps: {yesterdayWellness.steps ?? "—"}</p>
-              <p>Exercise: {yesterdayWellness.exerciseMinutes ?? "—"} min</p>
-              <p>Energy: {yesterdayWellness.energy ?? "—"}/10</p>
+              <p>
+                {dict.dashboard.sleep}: {yesterdayWellness.sleepHours ?? "—"}h
+              </p>
+              <p>
+                {dict.dashboard.steps}: {yesterdayWellness.steps ?? "—"}
+              </p>
+              <p>
+                {dict.dashboard.exercise}: {yesterdayWellness.exerciseMinutes ?? "—"} min
+              </p>
+              <p>
+                {dict.dashboard.energy}: {yesterdayWellness.energy ?? "—"}/10
+              </p>
             </div>
           ) : (
-            <p className="text-sm text-ink-light">No log for yesterday.</p>
+            <p className="text-sm text-ink-light">{dict.dashboard.noLogYesterday}</p>
           )}
           <Link href="/wellness" className="mt-3 inline-block text-xs text-sage-600 underline">
-            Log wellness
+            {dict.dashboard.logWellness}
           </Link>
         </div>
 
         {/* Journal / mood quick access */}
         <div className="card">
           <h2 className="mb-3 flex items-center gap-2 font-serif text-lg text-ink">
-            <Smile size={18} className="text-sage-500" /> Today's Journal
+            <Smile size={18} className="text-sage-500" /> {dict.dashboard.todaysJournal}
           </h2>
           {todayJournal ? (
             <div className="text-sm">
-              <p>Mood: {todayJournal.mood}/5 · Energy: {todayJournal.energy}/10</p>
+              <p>
+                {dict.dashboard.mood}: {todayJournal.mood}/5 · {dict.dashboard.energy}: {todayJournal.energy}/10
+              </p>
               {todayJournal.text && <p className="mt-1 text-ink-light line-clamp-2">{todayJournal.text}</p>}
             </div>
           ) : (
-            <p className="text-sm text-ink-light">You haven't journaled today.</p>
+            <p className="text-sm text-ink-light">{dict.dashboard.notJournaledToday}</p>
           )}
           <Link href="/journal" className="mt-3 inline-block text-xs text-sage-600 underline">
-            Open journal
+            {dict.dashboard.openJournal}
           </Link>
         </div>
       </div>

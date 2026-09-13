@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { isValidLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n/dictionaries";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -27,21 +29,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // data-theme attribute is present on first paint (avoids a flash of the
   // wrong theme instead of only applying it after client hydration).
   let theme = "light";
+  let locale: Locale = DEFAULT_LOCALE;
   try {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id as string | undefined;
     if (userId) {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { theme: true } });
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { theme: true, locale: true } });
       if (user?.theme) theme = user.theme;
+      if (isValidLocale(user?.locale)) locale = user!.locale as Locale;
     }
   } catch {
-    // Not signed in / DB unavailable at build time — fall back to light.
+    // Not signed in / DB unavailable at build time — fall back to defaults.
   }
 
   return (
-    <html lang="en" data-theme={theme} className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang={locale} data-theme={theme} className={`${fraunces.variable} ${inter.variable}`}>
       <body className="font-sans bg-cream-100 text-ink antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+        </Providers>
       </body>
     </html>
   );
