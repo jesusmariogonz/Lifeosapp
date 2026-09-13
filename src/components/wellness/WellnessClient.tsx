@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { apiFetch } from "@/lib/api";
+import { weightForDisplay, weightToCanonical, waterForDisplay, waterToCanonical, type UnitsPreference } from "@/lib/units";
 
 type WellnessLog = {
   id: string;
@@ -24,6 +25,13 @@ export default function WellnessClient() {
     queryKey: ["wellness"],
     queryFn: () => apiFetch("/api/wellness"),
   });
+  const { data: settings } = useQuery<{ units: UnitsPreference }>({
+    queryKey: ["settings"],
+    queryFn: () => apiFetch("/api/settings"),
+  });
+  const units: UnitsPreference = settings?.units || "metric";
+  const weightUnitLabel = units === "imperial" ? "lb" : "kg";
+  const waterUnitLabel = units === "imperial" ? "fl oz" : "L";
 
   const [form, setForm] = useState({
     sleepHours: "",
@@ -42,10 +50,10 @@ export default function WellnessClient() {
         body: JSON.stringify({
           date: new Date(),
           sleepHours: form.sleepHours ? Number(form.sleepHours) : null,
-          weight: form.weight ? Number(form.weight) : null,
+          weight: form.weight ? weightToCanonical(Number(form.weight), units) : null,
           steps: form.steps ? Number(form.steps) : null,
           exerciseMinutes: form.exerciseMinutes ? Number(form.exerciseMinutes) : null,
-          waterOz: form.waterOz ? Number(form.waterOz) : null,
+          waterOz: form.waterOz ? waterToCanonical(Number(form.waterOz), units) : null,
           energy: Number(form.energy),
           stress: Number(form.stress),
         }),
@@ -64,10 +72,10 @@ export default function WellnessClient() {
       >
         {[
           ["sleepHours", "Sleep (hrs)"],
-          ["weight", "Weight"],
+          ["weight", `Weight (${weightUnitLabel})`],
           ["steps", "Steps"],
           ["exerciseMinutes", "Exercise (min)"],
-          ["waterOz", "Water (oz)"],
+          ["waterOz", `Water (${waterUnitLabel})`],
         ].map(([key, label]) => (
           <div key={key}>
             <label className="label">{label}</label>
@@ -119,6 +127,8 @@ export default function WellnessClient() {
                 <tr>
                   <th className="py-1 pr-2">Date</th>
                   <th className="py-1 pr-2">Sleep</th>
+                  <th className="py-1 pr-2">Weight ({weightUnitLabel})</th>
+                  <th className="py-1 pr-2">Water ({waterUnitLabel})</th>
                   <th className="py-1 pr-2">Steps</th>
                   <th className="py-1 pr-2">Exercise</th>
                   <th className="py-1 pr-2">Energy</th>
@@ -130,6 +140,12 @@ export default function WellnessClient() {
                   <tr key={l.id}>
                     <td className="py-1 pr-2">{format(new Date(l.date), "MMM d")}</td>
                     <td className="py-1 pr-2">{l.sleepHours ?? "—"}</td>
+                    <td className="py-1 pr-2">
+                      {l.weight != null ? weightForDisplay(l.weight, units).toFixed(1) : "—"}
+                    </td>
+                    <td className="py-1 pr-2">
+                      {l.waterOz != null ? waterForDisplay(l.waterOz, units).toFixed(1) : "—"}
+                    </td>
                     <td className="py-1 pr-2">{l.steps ?? "—"}</td>
                     <td className="py-1 pr-2">{l.exerciseMinutes ?? "—"}</td>
                     <td className="py-1 pr-2">{l.energy ?? "—"}</td>

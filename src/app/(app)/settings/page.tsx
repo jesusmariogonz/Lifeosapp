@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   const [user, locale] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { timezone: true, currency: true, theme: true, locale: true, birthday: true },
+      select: { timezone: true, currency: true, theme: true, locale: true, birthday: true, units: true },
     }),
     getUserLocale(userId),
   ]);
@@ -26,6 +26,7 @@ export default async function SettingsPage() {
         initialTheme={user?.theme || "light"}
         initialLocale={user?.locale || "en"}
         initialBirthday={user?.birthday ? user.birthday.toISOString().slice(0, 10) : ""}
+        initialUnits={user?.units || "metric"}
       />
     </div>
   );

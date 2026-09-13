@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Globe2, Wallet, Palette, Languages, Cake } from "lucide-react";
+import { Check, Globe2, Wallet, Palette, Languages, Cake, Ruler } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
@@ -16,6 +16,8 @@ const THEME_VALUES: { value: "light" | "night" | "calm"; swatch: string[] }[] = 
 ];
 
 const LOCALE_VALUES: Locale[] = ["en", "es"];
+
+const UNITS_VALUES: ("metric" | "imperial")[] = ["metric", "imperial"];
 
 function getTimezoneList(): string[] {
   try {
@@ -54,12 +56,14 @@ export default function SettingsClient({
   initialTheme,
   initialLocale,
   initialBirthday,
+  initialUnits,
 }: {
   initialTimezone: string;
   initialCurrency: string;
   initialTheme: string;
   initialLocale: string;
   initialBirthday: string;
+  initialUnits: string;
 }) {
   const router = useRouter();
   const { dict, setLocale: setContextLocale } = useTranslation();
@@ -83,6 +87,9 @@ export default function SettingsClient({
   const [bdaySaving, setBdaySaving] = useState(false);
   const [bdaySaved, setBdaySaved] = useState(false);
   const [bdayError, setBdayError] = useState<string | null>(null);
+
+  const [units, setUnits] = useState(initialUnits);
+  const [unitsError, setUnitsError] = useState<string | null>(null);
 
   const [browserSuggestion, setBrowserSuggestion] = useState<string | null>(null);
 
@@ -176,6 +183,16 @@ export default function SettingsClient({
       setBdayError(e.message || "Could not save birthday");
     } finally {
       setBdaySaving(false);
+    }
+  }
+
+  async function saveUnits(value: string) {
+    setUnits(value);
+    setUnitsError(null);
+    try {
+      await apiFetch("/api/settings", { method: "PATCH", body: JSON.stringify({ units: value }) });
+    } catch (e: any) {
+      setUnitsError(e.message || "Could not save units — it will reset next visit.");
     }
   }
 
@@ -284,6 +301,37 @@ export default function SettingsClient({
             </span>
           )}
         </div>
+      </div>
+
+      {/* Units */}
+      <div className="card space-y-3">
+        <div className="flex items-center gap-2">
+          <Ruler size={18} className="text-sage-500" />
+          <h2 className="font-serif text-lg text-ink">{dict.settings.units.heading}</h2>
+        </div>
+        <p className="text-sm text-ink-light">{dict.settings.units.description}</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {UNITS_VALUES.map((value) => {
+            const info = dict.settings.units[value];
+            return (
+              <button
+                key={value}
+                onClick={() => saveUnits(value)}
+                className={cn(
+                  "rounded-2xl border-2 p-3 text-left transition",
+                  units === value ? "border-sage-400 shadow-soft" : "border-cream-300 hover:border-sage-200"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{info.label}</span>
+                  {units === value && <Check size={16} className="text-sage-500" />}
+                </div>
+                <p className="mt-1 text-xs text-ink-light">{info.blurb}</p>
+              </button>
+            );
+          })}
+        </div>
+        {unitsError && <p className="text-xs text-red-500">{unitsError}</p>}
       </div>
 
       {/* Theme */}

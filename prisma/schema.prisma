@@ -29,6 +29,7 @@ model User {
   theme         String   @default("light")
   locale        String   @default("en")
   birthday      DateTime?
+  units         String   @default("metric") // "metric" | "imperial" — display/input only; DB values always stored in canonical units (see WellnessLog)
   createdAt     DateTime @default(now())
 
   events         Event[]
@@ -151,10 +152,10 @@ model WellnessLog {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date            DateTime
   sleepHours      Float?
-  weight          Float?
+  weight          Float?   // canonical unit: kilograms, regardless of the user's display "units" setting — convert at the API/UI edges
   steps           Int?
   exerciseMinutes Int?
-  waterOz         Float?
+  waterOz         Float?   // canonical unit: US fluid ounces (column name kept for compatibility) — convert to L/mL for metric display
   energy          Int?
   stress          Int?
   // V4: wearable/health integration hook

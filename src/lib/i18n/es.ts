@@ -42,6 +42,12 @@ const es: typeof en = {
       heading: "Cumpleaños",
       description: "Configúralo una vez y aparecerá como un evento anual recurrente en tu Calendario y Panel.",
     },
+    units: {
+      heading: "Unidades",
+      description: "Elige cómo se muestran el peso y el consumo de agua en Bienestar — se aplica al instante.",
+      metric: { label: "Métrico", blurb: "Kilogramos (kg) y litros (L)." },
+      imperial: { label: "Imperial", blurb: "Libras (lb) y onzas líquidas (fl oz)." },
+    },
     theme: {
       heading: "Tema",
       description: "Elige un estilo — se aplica al instante, sin recargar.",

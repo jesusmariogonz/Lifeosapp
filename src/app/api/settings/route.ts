@@ -6,6 +6,7 @@ import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { SUPPORTED_LOCALES } from "@/lib/i18n/dictionaries";
 
 const VALID_THEMES = ["light", "night", "calm"];
+const VALID_UNITS = ["metric", "imperial"];
 const VALID_CURRENCIES = new Set(SUPPORTED_CURRENCIES.map((c) => c.code));
 const VALID_LOCALES = new Set<string>(SUPPORTED_LOCALES);
 
@@ -14,7 +15,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { timezone: true, currency: true, theme: true, locale: true, birthday: true },
+    select: { timezone: true, currency: true, theme: true, locale: true, birthday: true, units: true },
   });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(user);
@@ -25,7 +26,7 @@ export async function PATCH(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
 
-  const data: { timezone?: string; currency?: string; theme?: string; locale?: string; birthday?: Date | null } = {};
+  const data: { timezone?: string; currency?: string; theme?: string; locale?: string; birthday?: Date | null; units?: string } = {};
 
   if (body.timezone !== undefined) {
     if (!isValidTimeZone(body.timezone)) {
@@ -67,6 +68,13 @@ export async function PATCH(req: Request) {
     }
   }
 
+  if (body.units !== undefined) {
+    if (!VALID_UNITS.includes(body.units)) {
+      return NextResponse.json({ error: "Invalid units" }, { status: 400 });
+    }
+    data.units = body.units;
+  }
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No valid fields provided" }, { status: 400 });
   }
@@ -74,7 +82,7 @@ export async function PATCH(req: Request) {
   const user = await prisma.user.update({
     where: { id: userId },
     data,
-    select: { timezone: true, currency: true, theme: true, locale: true, birthday: true },
+    select: { timezone: true, currency: true, theme: true, locale: true, birthday: true, units: true },
   });
 
   return NextResponse.json(user);

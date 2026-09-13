@@ -34,6 +34,12 @@ const en: {
     };
     currency: { heading: string; description: string };
     birthday: { heading: string; description: string };
+    units: {
+      heading: string;
+      description: string;
+      metric: { label: string; blurb: string };
+      imperial: { label: string; blurb: string };
+    };
     theme: {
       heading: string;
       description: string;
@@ -142,6 +148,12 @@ const en: {
     birthday: {
       heading: "Birthday",
       description: "Set once, then shows up as a recurring yearly event on your Calendar and Dashboard.",
+    },
+    units: {
+      heading: "Units",
+      description: "Choose how weight and water intake are displayed in Wellness — applies instantly.",
+      metric: { label: "Metric", blurb: "Kilograms (kg) and liters (L)." },
+      imperial: { label: "Imperial", blurb: "Pounds (lb) and fluid ounces (fl oz)." },
     },
     theme: {
       heading: "Theme",
