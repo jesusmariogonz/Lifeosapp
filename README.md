@@ -48,6 +48,9 @@ A calm, all-in-one personal life-management app: dashboard, calendar, tasks, hab
    Optional (AI Planning Assistant):
    - `ANTHROPIC_API_KEY` — your Anthropic API key. Without it, `/assistant` shows a friendly "AI assistant not configured" state; everything else in the app works normally.
 
+   Optional (production demo seeding):
+   - `ADMIN_SEED_SECRET` — a random secret. When set, `POST /api/admin/seed` with header `x-seed-secret: <that value>` (re)creates the `demo@lifeos.app` demo account and its data. Useful on hosts like Vercel where you can't run `npm run seed` directly against the production database. Leave unset to disable the endpoint (it 401s with no secret configured).
+
 3. Push the schema to your database and generate the Prisma client:
 
    ```bash

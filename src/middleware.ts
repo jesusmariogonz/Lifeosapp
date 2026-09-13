@@ -11,5 +11,9 @@ export const config = {
     "/wellness/:path*",
     "/journal/:path*",
     "/weekly-review/:path*",
+    "/analytics/:path*",
+    "/assistant/:path*",
+    "/relationships/:path*",
+    "/integrations/:path*",
   ],
 };
