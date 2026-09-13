@@ -549,7 +549,8 @@ function EventModal({
   const { dict } = useTranslation();
   const queryClient = useQueryClient();
   const isEdit = !!event;
-  const baseDate = event ? new Date(event.startsAt) : date!;
+  const initialDate = event ? new Date(event.startsAt) : date!;
+  const [eventDate, setEventDate] = useState(format(initialDate, "yyyy-MM-dd"));
   const [title, setTitle] = useState(event?.title ?? "");
   const [startTime, setStartTime] = useState(event && !event.allDay ? format(new Date(event.startsAt), "HH:mm") : "09:00");
   const [endTime, setEndTime] = useState(event && !event.allDay ? format(new Date(event.endsAt), "HH:mm") : "10:00");
@@ -558,11 +559,12 @@ function EventModal({
 
   const saveEvent = useMutation({
     mutationFn: () => {
+      const [y, m, d] = eventDate.split("-").map(Number);
       const [sh, sm] = startTime.split(":").map(Number);
       const [eh, em] = endTime.split(":").map(Number);
-      const startsAt = new Date(baseDate);
+      const startsAt = new Date(y, m - 1, d);
       startsAt.setHours(sh, sm, 0, 0);
-      const endsAt = new Date(baseDate);
+      const endsAt = new Date(y, m - 1, d);
       endsAt.setHours(eh, em, 0, 0);
       const payload = { title, startsAt, endsAt, allDay, location };
       return isEdit
@@ -580,7 +582,7 @@ function EventModal({
       <div className="card w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-serif text-lg">
-            {isEdit ? dict.pages.calendar.editEventTitle : dict.pages.calendar.newEventTitle} — {format(baseDate, "MMM d")}
+            {isEdit ? dict.pages.calendar.editEventTitle : dict.pages.calendar.newEventTitle}
           </h3>
           <button onClick={onClose}>
             <X size={18} />
@@ -596,6 +598,10 @@ function EventModal({
           <div>
             <label className="label">Title</label>
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </div>
+          <div>
+            <label className="label">Date</label>
+            <input className="input" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} /> All day
