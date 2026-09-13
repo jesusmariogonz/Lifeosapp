@@ -48,15 +48,9 @@ export default async function DashboardPage() {
     .sort((a, b) => a.next.getTime() - b.next.getTime())
     .slice(0, 4);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const hoursLeft = 24 - new Date().getHours();
-
   return (
     <DashboardClient
       userName={user?.name || user?.email || "there"}
-      greeting={greeting}
-      hoursLeft={hoursLeft}
       events={JSON.parse(JSON.stringify(events))}
       tasks={JSON.parse(JSON.stringify(tasks))}
       habits={JSON.parse(JSON.stringify(habits))}

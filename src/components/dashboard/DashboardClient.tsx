@@ -26,8 +26,6 @@ type UpcomingDate = { label: string; contactName: string; next: string };
 
 export default function DashboardClient({
   userName,
-  greeting,
-  hoursLeft,
   events,
   tasks,
   habits,
@@ -37,8 +35,6 @@ export default function DashboardClient({
   upcomingDates,
 }: {
   userName: string;
-  greeting: string;
-  hoursLeft: number;
   events: EventT[];
   tasks: Task[];
   habits: Habit[];
@@ -47,7 +43,13 @@ export default function DashboardClient({
   todayJournal: Journal;
   upcomingDates: UpcomingDate[];
 }) {
-  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const now = new Date();
+  const todayKey = format(now, "yyyy-MM-dd");
+  // Computed client-side (not passed from the server) so this reflects the
+  // viewer's own local time rather than the server's (Vercel runs in UTC).
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const hoursLeft = 24 - hour;
   const { getPriorities, togglePriority } = usePrioritiesStore();
   const priorityIds = getPriorities(todayKey);
   const queryClient = useQueryClient();
@@ -84,7 +86,7 @@ export default function DashboardClient({
           {greeting}, {userName.split(" ")[0]}
         </h1>
         <p className="text-sm text-ink-light">
-          {format(new Date(), "EEEE, MMMM d")} · {hoursLeft} hours left today
+          {format(now, "EEEE, MMMM d")} · {hoursLeft} hours left today
         </p>
       </header>
 
