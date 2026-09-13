@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CloudSun, Star, CheckCircle2, Circle, Flame, Smile } from "lucide-react";
+import { Star, CheckCircle2, Circle, Flame, Smile } from "lucide-react";
 import { usePrioritiesStore } from "@/store/priorities";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import WeatherCard from "@/components/dashboard/WeatherCard";
 
 type Task = { id: string; title: string; completed: boolean; priority: number; dueDate: string | null };
 type EventT = { id: string; title: string; startsAt: string; endsAt: string; allDay: boolean; location: string | null };
@@ -88,14 +89,7 @@ export default function DashboardClient({
       </header>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        {/* Weather placeholder */}
-        <div className="card flex items-center gap-4 md:col-span-1">
-          <CloudSun className="text-sage-500" size={36} />
-          <div>
-            <p className="text-2xl font-semibold">72°F</p>
-            <p className="text-xs text-ink-light">Partly cloudy (mock data)</p>
-          </div>
-        </div>
+        <WeatherCard />
 
         {/* Today's priorities */}
         <div className="card md:col-span-2">

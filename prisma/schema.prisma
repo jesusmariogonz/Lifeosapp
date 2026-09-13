@@ -32,6 +32,7 @@ model User {
   journalEntries JournalEntry[]
   weeklyReviews  WeeklyReview[]
   contacts       Contact[]
+  weatherLocations WeatherLocation[]
 }
 
 model Event {
@@ -230,6 +231,20 @@ model JournalEntry {
   createdAt DateTime @default(now())
 
   @@unique([userId, date])
+}
+
+// V5: Dashboard weather — user-selected locations for the weather card
+model WeatherLocation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  latitude  Float
+  longitude Float
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model WeeklyReview {

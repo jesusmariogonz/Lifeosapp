@@ -200,5 +200,13 @@ export async function runSeed(prisma: PrismaClient) {
     },
   });
 
+  // Weather locations (V5)
+  await prisma.weatherLocation.createMany({
+    data: [
+      { userId: user.id, name: "Ciudad de México", latitude: 19.4326, longitude: -99.1332, order: 0 },
+      { userId: user.id, name: "Madrid", latitude: 40.4168, longitude: -3.7038, order: 1 },
+    ],
+  });
+
   return { email, password: "demo1234" };
 }
