@@ -30,6 +30,7 @@ export default function HabitsClient() {
 
   const [name, setName] = useState("");
   const [frequency, setFrequency] = useState("DAILY");
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
   const createHabit = useMutation({
     mutationFn: () => apiFetch("/api/habits", { method: "POST", body: JSON.stringify({ name, frequency }) }),
@@ -41,7 +42,10 @@ export default function HabitsClient() {
 
   const deleteHabit = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/habits/${id}`, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["habits"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] });
+      setHabitToDelete(null);
+    },
   });
 
   const toggleLog = useMutation({
@@ -99,7 +103,7 @@ export default function HabitsClient() {
                     <p className="font-medium">{h.name}</p>
                     <p className="text-xs text-ink-light">{h.frequency.replace("_", " ").toLowerCase()}</p>
                   </div>
-                  <button onClick={() => deleteHabit.mutate(h.id)} className="text-ink-light hover:text-red-500">
+                  <button onClick={() => setHabitToDelete(h)} className="text-ink-light hover:text-red-500">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -129,6 +133,32 @@ export default function HabitsClient() {
             );
           })}
           {(habits || []).length === 0 && <p className="text-sm text-ink-light">No habits yet.</p>}
+        </div>
+      )}
+
+      {habitToDelete && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-ink/30 p-4"
+          onClick={() => setHabitToDelete(null)}
+        >
+          <div className="card w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-serif text-lg text-ink">Delete "{habitToDelete.name}"?</h3>
+            <p className="mt-1 text-sm text-ink-light">
+              This will permanently delete this habit and its full history. This can't be undone.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="btn-secondary" onClick={() => setHabitToDelete(null)}>
+                Cancel
+              </button>
+              <button
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-60"
+                disabled={deleteHabit.isPending}
+                onClick={() => deleteHabit.mutate(habitToDelete.id)}
+              >
+                {deleteHabit.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
