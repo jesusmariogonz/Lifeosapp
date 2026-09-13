@@ -154,6 +154,7 @@ const en: {
       editTaskTitle: string;
       saveChanges: string;
       cancelEdit: string;
+      recurrenceLockedForSeries: string;
     };
     goals: { title: string; addGoal: string; empty: string };
     habits: { title: string; addHabit: string; empty: string };
@@ -327,6 +328,7 @@ const en: {
       editTaskTitle: "Edit task",
       saveChanges: "Save changes",
       cancelEdit: "Cancel",
+      recurrenceLockedForSeries: "This task is already part of a recurring series — its repeat pattern can't be changed here.",
     },
     goals: { title: "Goals & Vision", addGoal: "Add goal", empty: "No goals yet." },
     habits: { title: "Habits", addHabit: "Add habit", empty: "No habits yet." },

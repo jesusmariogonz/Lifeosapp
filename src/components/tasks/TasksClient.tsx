@@ -128,14 +128,29 @@ export default function TasksClient() {
   });
 
   const editTask = useMutation({
-    mutationFn: (vars: { id: string; title: string; dueDate: string | null; priority: number }) =>
+    mutationFn: (vars: {
+      id: string;
+      title: string;
+      dueDate: string | null;
+      priority: number;
+      recurrence?: string | null;
+      recurrenceDays?: number[];
+    }) =>
       apiFetch(`/api/tasks/${vars.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ title: vars.title, dueDate: vars.dueDate, priority: vars.priority }),
+        body: JSON.stringify({
+          title: vars.title,
+          dueDate: vars.dueDate,
+          priority: vars.priority,
+          ...(vars.recurrence !== undefined ? { recurrence: vars.recurrence, recurrenceDays: vars.recurrenceDays ?? [] } : {}),
+        }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setEditingTask(null);
+    },
+    onError: (err: any) => {
+      alert(err?.message || "Could not save changes.");
     },
   });
 
@@ -211,48 +226,15 @@ export default function TasksClient() {
           </button>
         </div>
 
-        <div>
-          <label className="label">{t.repeat}</label>
-          {repeatDisabled ? (
-            <p className="text-xs text-ink-light">{t.repeatNeedsDueDate}</p>
-          ) : (
-            <>
-              <select
-                className="input"
-                value={repeat}
-                onChange={(e) => handleRepeatChange(e.target.value as RepeatOption)}
-              >
-                <option value="NONE">{t.repeatNone}</option>
-                <option value="DAILY">{t.repeatDaily}</option>
-                <option value="WEEKLY">{t.repeatWeekly}</option>
-                <option value="WEEKDAYS">{t.repeatWeekdays}</option>
-                <option value="CUSTOM">{t.repeatCustom}</option>
-              </select>
-              {repeat === "CUSTOM" && (
-                <div className="mt-2">
-                  <p className="mb-1 text-xs text-ink-light">{t.customDays}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {DAY_ORDER.map((day) => (
-                      <button
-                        type="button"
-                        key={day}
-                        onClick={() => toggleCustomDay(day)}
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-xs font-medium",
-                          customDays.includes(day)
-                            ? "border-sage-400 bg-sage-400 text-white"
-                            : "border-cream-300 text-ink-light"
-                        )}
-                      >
-                        {dayLabels[day]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        <RepeatPicker
+          t={t}
+          dayLabels={dayLabels}
+          disabled={repeatDisabled}
+          repeat={repeat}
+          customDays={customDays}
+          onRepeatChange={handleRepeatChange}
+          onToggleDay={toggleCustomDay}
+        />
       </form>
 
       {isLoading ? (
@@ -371,6 +353,65 @@ export default function TasksClient() {
   );
 }
 
+function RepeatPicker({
+  t,
+  dayLabels,
+  disabled,
+  repeat,
+  customDays,
+  onRepeatChange,
+  onToggleDay,
+}: {
+  t: any;
+  dayLabels: Record<number, string>;
+  disabled: boolean;
+  repeat: RepeatOption;
+  customDays: number[];
+  onRepeatChange: (v: RepeatOption) => void;
+  onToggleDay: (day: number) => void;
+}) {
+  return (
+    <div>
+      <label className="label">{t.repeat}</label>
+      {disabled ? (
+        <p className="text-xs text-ink-light">{t.repeatNeedsDueDate}</p>
+      ) : (
+        <>
+          <select className="input" value={repeat} onChange={(e) => onRepeatChange(e.target.value as RepeatOption)}>
+            <option value="NONE">{t.repeatNone}</option>
+            <option value="DAILY">{t.repeatDaily}</option>
+            <option value="WEEKLY">{t.repeatWeekly}</option>
+            <option value="WEEKDAYS">{t.repeatWeekdays}</option>
+            <option value="CUSTOM">{t.repeatCustom}</option>
+          </select>
+          {repeat === "CUSTOM" && (
+            <div className="mt-2">
+              <p className="mb-1 text-xs text-ink-light">{t.customDays}</p>
+              <div className="flex flex-wrap gap-2">
+                {DAY_ORDER.map((day) => (
+                  <button
+                    type="button"
+                    key={day}
+                    onClick={() => onToggleDay(day)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-xs font-medium",
+                      customDays.includes(day)
+                        ? "border-sage-400 bg-sage-400 text-white"
+                        : "border-cream-300 text-ink-light"
+                    )}
+                  >
+                    {dayLabels[day]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function EditTaskModal({
   task,
   onClose,
@@ -379,14 +420,50 @@ function EditTaskModal({
 }: {
   task: Task;
   onClose: () => void;
-  onSave: (vars: { id: string; title: string; dueDate: string | null; priority: number }) => void;
+  onSave: (vars: {
+    id: string;
+    title: string;
+    dueDate: string | null;
+    priority: number;
+    recurrence?: string | null;
+    recurrenceDays?: number[];
+  }) => void;
   isSaving: boolean;
 }) {
   const { dict } = useTranslation();
   const t = dict.pages.tasks;
+  const dayLabels: Record<number, string> = {
+    1: t.dayMon,
+    2: t.dayTue,
+    3: t.dayWed,
+    4: t.dayThu,
+    5: t.dayFri,
+    6: t.daySat,
+    0: t.daySun,
+  };
   const [title, setTitle] = useState(task.title);
   const [dueDate, setDueDate] = useState(task.dueDate ? format(dateOnlyToLocal(task.dueDate), "yyyy-MM-dd") : "");
   const [priority, setPriority] = useState(task.priority);
+  const [repeat, setRepeat] = useState<RepeatOption>((task.recurrence as RepeatOption) || "NONE");
+  const [customDays, setCustomDays] = useState<number[]>(task.recurrenceDays || []);
+
+  // Editing the repeat pattern of a task that's already part of a series
+  // (recurringGroupId set) isn't supported — that would mean reconciling or
+  // regenerating every other instance. A standalone task can still be turned
+  // into the start of a new series.
+  const alreadyInSeries = !!task.recurringGroupId;
+
+  function handleRepeatChange(value: RepeatOption) {
+    setRepeat(value);
+    if (value === "CUSTOM" && dueDate) {
+      const anchorDay = dateOnlyToLocal(dueDate).getDay();
+      setCustomDays((prev) => (prev.includes(anchorDay) ? prev : [...prev, anchorDay]));
+    }
+  }
+
+  function toggleCustomDay(day: number) {
+    setCustomDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  }
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 sm:items-center sm:px-4" onClick={onClose}>
@@ -403,7 +480,16 @@ function EditTaskModal({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (title.trim()) onSave({ id: task.id, title, dueDate: dueDate || null, priority });
+            if (!title.trim()) return;
+            onSave({
+              id: task.id,
+              title,
+              dueDate: dueDate || null,
+              priority,
+              ...(alreadyInSeries
+                ? {}
+                : { recurrence: repeat === "NONE" ? null : repeat, recurrenceDays: repeat === "CUSTOM" ? customDays : [] }),
+            });
           }}
           className="space-y-3"
         >
@@ -423,6 +509,19 @@ function EditTaskModal({
               <option value={3}>{t.priorityLow}</option>
             </select>
           </div>
+          {alreadyInSeries ? (
+            <p className="text-xs text-ink-light">{t.recurrenceLockedForSeries}</p>
+          ) : (
+            <RepeatPicker
+              t={t}
+              dayLabels={dayLabels}
+              disabled={!dueDate}
+              repeat={repeat}
+              customDays={customDays}
+              onRepeatChange={handleRepeatChange}
+              onToggleDay={toggleCustomDay}
+            />
+          )}
           <div className="flex justify-end gap-2">
             <button type="button" className="btn-secondary" onClick={onClose}>
               {t.cancelEdit}
