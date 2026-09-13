@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, Pencil, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +50,20 @@ export default function GoalsClient() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["goals"] }),
   });
 
+  const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
+
+  const editObjective = useMutation({
+    mutationFn: (vars: { id: string; title: string; description: string | null }) =>
+      apiFetch(`/api/objectives/${vars.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: vars.title, description: vars.description }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      setEditingObjective(null);
+    },
+  });
+
   return (
     <div className="space-y-5">
       <form
@@ -93,7 +107,16 @@ export default function GoalsClient() {
                     <button onClick={() => toggleObjective.mutate(o)} className="shrink-0 text-sage-500">
                       {o.completed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                     </button>
-                    <span className={cn(o.completed ? "text-ink-light line-through" : "text-ink-light")}>{o.title}</span>
+                    <span className={cn("flex-1", o.completed ? "text-ink-light line-through" : "text-ink-light")}>
+                      {o.title}
+                    </span>
+                    <button
+                      onClick={() => setEditingObjective(o)}
+                      className="shrink-0 text-ink-light hover:text-sage-600"
+                      aria-label="Edit objective"
+                    >
+                      <Pencil size={14} />
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -119,6 +142,67 @@ export default function GoalsClient() {
           {(goals || []).length === 0 && <p className="text-sm text-ink-light">No goals yet.</p>}
         </div>
       )}
+
+      {editingObjective && (
+        <EditObjectiveModal
+          objective={editingObjective}
+          onClose={() => setEditingObjective(null)}
+          onSave={(vars) => editObjective.mutate(vars)}
+          isSaving={editObjective.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditObjectiveModal({
+  objective,
+  onClose,
+  onSave,
+  isSaving,
+}: {
+  objective: Objective;
+  onClose: () => void;
+  onSave: (vars: { id: string; title: string; description: string | null }) => void;
+  isSaving: boolean;
+}) {
+  const [title, setTitle] = useState(objective.title);
+  const [description, setDescription] = useState(objective.description ?? "");
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 sm:items-center sm:px-4" onClick={onClose}>
+      <div className="card w-full max-w-sm rounded-b-none sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-serif text-lg">Edit objective</h3>
+          <button onClick={onClose} aria-label="Cancel">
+            <X size={18} />
+          </button>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (title.trim()) onSave({ id: objective.id, title, description: description || null });
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <label className="label">Title</label>
+            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </div>
+          <div>
+            <label className="label">Description (optional)</label>
+            <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary" disabled={isSaving}>
+              Save changes
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
