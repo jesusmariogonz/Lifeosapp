@@ -83,6 +83,7 @@ export default function DashboardClient({
   });
 
   const priorityTasks = tasks.filter((t) => priorityIds.includes(t.id));
+  const pickableTasks = tasks.filter((t) => !t.completed && !priorityIds.includes(t.id));
 
   return (
     <div className="space-y-6">
@@ -106,24 +107,51 @@ export default function DashboardClient({
               {priorityIds.length}/3 {dict.dashboard.selected}
             </span>
           </div>
-          {priorityTasks.length === 0 ? (
-            <p className="text-sm text-ink-light">
-              {dict.dashboard.pickPriorities}{" "}
-              <Link href="/tasks" className="text-sage-600 underline">
-                {dict.dashboard.taskList}
-              </Link>
-              .
-            </p>
-          ) : (
-            <ul className="space-y-2">
+          {priorityTasks.length > 0 && (
+            <ul className="mb-2 space-y-2">
               {priorityTasks.map((t) => (
                 <li key={t.id} className="flex items-center gap-2">
-                  <Star size={16} className="text-sage-500" fill="currentColor" />
-                  <span className={cn(t.completed && "line-through text-ink-light")}>{t.title}</span>
+                  <button
+                    onClick={() => togglePriority(todayKey, t.id)}
+                    className="text-sage-500 hover:text-ink-light"
+                    title={dict.dashboard.addPriority}
+                  >
+                    <Star size={16} fill="currentColor" />
+                  </button>
+                  <span className={cn("text-sm", t.completed && "line-through text-ink-light")}>{t.title}</span>
                 </li>
               ))}
             </ul>
           )}
+          {priorityIds.length < 3 &&
+            (pickableTasks.length === 0 ? (
+              priorityTasks.length === 0 && (
+                <p className="text-sm text-ink-light">
+                  {dict.dashboard.noMoreTasksToAdd}{" "}
+                  <Link href="/tasks" className="text-sage-600 underline">
+                    {dict.dashboard.taskList}
+                  </Link>
+                  .
+                </p>
+              )
+            ) : (
+              <div className={cn(priorityTasks.length > 0 && "border-t border-cream-300 pt-2")}>
+                <p className="mb-1 text-xs text-ink-light">{dict.dashboard.addPriority}</p>
+                <ul className="space-y-1">
+                  {pickableTasks.slice(0, 5).map((t) => (
+                    <li key={t.id}>
+                      <button
+                        onClick={() => togglePriority(todayKey, t.id)}
+                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-sm text-ink-light hover:bg-cream-200 hover:text-ink"
+                      >
+                        <Star size={16} />
+                        <span>{t.title}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
         </div>
       </div>
 

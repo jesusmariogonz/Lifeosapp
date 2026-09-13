@@ -68,6 +68,8 @@ const en: {
     | "selected"
     | "pickPriorities"
     | "taskList"
+    | "addPriority"
+    | "noMoreTasksToAdd"
     | "upcomingEvents"
     | "noEvents"
     | "upcomingDates"
@@ -94,7 +96,17 @@ const en: {
     string
   >;
   pages: {
-    calendar: { title: string };
+    calendar: {
+      title: string;
+      events: string;
+      tasksDue: string;
+      noEvents: string;
+      noTasksDue: string;
+      addEvent: string;
+      viewAllTasks: string;
+      close: string;
+      allDay: string;
+    };
     tasks: { title: string; addTask: string; empty: string };
     goals: { title: string; addGoal: string; empty: string };
     habits: { title: string; addHabit: string; empty: string };
@@ -183,6 +195,8 @@ const en: {
     selected: "selected",
     pickPriorities: "Pick up to 3 priorities from your",
     taskList: "task list",
+    addPriority: "Tap a task to add it as a priority",
+    noMoreTasksToAdd: "No more open tasks to add — create one on the",
     upcomingEvents: "Upcoming Events",
     noEvents: "No events scheduled. Nice and clear.",
     upcomingDates: "Upcoming dates",
@@ -208,7 +222,17 @@ const en: {
     yourBirthday: "🎂 Your Birthday",
   },
   pages: {
-    calendar: { title: "Calendar" },
+    calendar: {
+      title: "Calendar",
+      events: "Events",
+      tasksDue: "Tasks due",
+      noEvents: "No events.",
+      noTasksDue: "No tasks due.",
+      addEvent: "Add event",
+      viewAllTasks: "View all tasks",
+      close: "Close",
+      allDay: "All day",
+    },
     tasks: { title: "Tasks", addTask: "Add task", empty: "No tasks yet." },
     goals: { title: "Goals & Vision", addGoal: "Add goal", empty: "No goals yet." },
     habits: { title: "Habits", addHabit: "Add habit", empty: "No habits yet." },
