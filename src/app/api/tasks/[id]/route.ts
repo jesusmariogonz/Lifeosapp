@@ -17,6 +17,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.priority !== undefined) data.priority = body.priority;
   if (body.goalId !== undefined) data.goalId = body.goalId;
   if (body.objectiveId !== undefined) data.objectiveId = body.objectiveId;
+  if (body.order !== undefined) data.order = body.order;
   if (body.completed !== undefined) {
     data.completed = body.completed;
     data.completedAt = body.completed ? new Date() : null;
@@ -25,9 +26,31 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json(task);
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const userId = await getCurrentUserId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const scope = searchParams.get("scope"); // "series" deletes this + all future occurrences
+
+  if (scope === "series") {
+    const task = await prisma.task.findFirst({ where: { id: params.id, userId } });
+    if (task?.recurringGroupId) {
+      // Delete this occurrence and every future one in the same series.
+      // Past occurrences (already due/completed) are left untouched —
+      // instances are independent rows, deleting one series member never
+      // affects another.
+      await prisma.task.deleteMany({
+        where: {
+          userId,
+          recurringGroupId: task.recurringGroupId,
+          dueDate: { gte: task.dueDate ?? undefined },
+        },
+      });
+      return NextResponse.json({ ok: true });
+    }
+  }
+
   await prisma.task.deleteMany({ where: { id: params.id, userId } });
   return NextResponse.json({ ok: true });
 }

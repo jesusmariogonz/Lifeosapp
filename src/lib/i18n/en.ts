@@ -107,7 +107,45 @@ const en: {
       close: string;
       allDay: string;
     };
-    tasks: { title: string; addTask: string; empty: string };
+    tasks: {
+      title: string;
+      addTask: string;
+      empty: string;
+      newTask: string;
+      titlePlaceholder: string;
+      dueDate: string;
+      noDueDate: string;
+      priority: string;
+      priorityHigh: string;
+      priorityMedium: string;
+      priorityLow: string;
+      postpone: string;
+      repeat: string;
+      repeatNone: string;
+      repeatDaily: string;
+      repeatWeekly: string;
+      repeatWeekdays: string;
+      repeatCustom: string;
+      repeatNeedsDueDate: string;
+      customDays: string;
+      dayMon: string;
+      dayTue: string;
+      dayWed: string;
+      dayThu: string;
+      dayFri: string;
+      daySat: string;
+      daySun: string;
+      recurringBadge: string;
+      moveUp: string;
+      moveDown: string;
+      deleteTaskTitle: string;
+      deleteTaskBody: string;
+      deleteSeriesOption: string;
+      deleteOnceOption: string;
+      cancel: string;
+      deleting: string;
+      loading: string;
+    };
     goals: { title: string; addGoal: string; empty: string };
     habits: { title: string; addHabit: string; empty: string };
     finance: { title: string };
@@ -233,7 +271,45 @@ const en: {
       close: "Close",
       allDay: "All day",
     },
-    tasks: { title: "Tasks", addTask: "Add task", empty: "No tasks yet." },
+    tasks: {
+      title: "Tasks",
+      addTask: "Add task",
+      empty: "No tasks yet.",
+      newTask: "New task",
+      titlePlaceholder: "Do something...",
+      dueDate: "Due date",
+      noDueDate: "No due date",
+      priority: "Priority",
+      priorityHigh: "High",
+      priorityMedium: "Medium",
+      priorityLow: "Low",
+      postpone: "Postpone",
+      repeat: "Repeat",
+      repeatNone: "Doesn't repeat",
+      repeatDaily: "Daily",
+      repeatWeekly: "Weekly",
+      repeatWeekdays: "Weekdays (Mon-Fri)",
+      repeatCustom: "Custom days",
+      repeatNeedsDueDate: "Set a due date to make this task repeat.",
+      customDays: "Repeats on",
+      dayMon: "Mon",
+      dayTue: "Tue",
+      dayWed: "Wed",
+      dayThu: "Thu",
+      dayFri: "Fri",
+      daySat: "Sat",
+      daySun: "Sun",
+      recurringBadge: "Part of a recurring series",
+      moveUp: "Move up",
+      moveDown: "Move down",
+      deleteTaskTitle: "Delete this task?",
+      deleteTaskBody: "This can't be undone.",
+      deleteSeriesOption: "Delete this and all future occurrences",
+      deleteOnceOption: "Delete just this one",
+      cancel: "Cancel",
+      deleting: "Deleting...",
+      loading: "Loading tasks...",
+    },
     goals: { title: "Goals & Vision", addGoal: "Add goal", empty: "No goals yet." },
     habits: { title: "Habits", addHabit: "Add habit", empty: "No habits yet." },
     finance: { title: "Finance" },
