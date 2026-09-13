@@ -24,7 +24,7 @@ type Wellness = {
   stress: number | null;
 } | null;
 type Journal = { mood: number; energy: number; text: string | null } | null;
-type UpcomingDate = { label: string; contactName: string; next: string };
+type UpcomingDate = { label: string; contactName: string | null; next: string };
 
 export default function DashboardClient({
   userName,
@@ -150,7 +150,8 @@ export default function DashboardClient({
               <p className="text-xs font-medium uppercase tracking-wide text-ink-light">{dict.dashboard.upcomingDates}</p>
               {upcomingDates.map((d, i) => (
                 <p key={i} className="text-xs text-ink-light">
-                  {d.label} — {d.contactName} · {format(new Date(d.next), "MMM d", { locale: dateFnsLocale })}
+                  {d.label}
+                  {d.contactName ? ` — ${d.contactName}` : ""} · {format(new Date(d.next), "MMM d", { locale: dateFnsLocale })}
                 </p>
               ))}
             </div>

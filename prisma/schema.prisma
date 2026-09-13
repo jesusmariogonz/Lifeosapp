@@ -28,6 +28,7 @@ model User {
   currency      String   @default("USD")
   theme         String   @default("light")
   locale        String   @default("en")
+  birthday      DateTime?
   createdAt     DateTime @default(now())
 
   events         Event[]

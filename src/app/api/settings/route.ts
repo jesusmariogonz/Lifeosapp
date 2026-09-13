@@ -14,7 +14,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { timezone: true, currency: true, theme: true, locale: true },
+    select: { timezone: true, currency: true, theme: true, locale: true, birthday: true },
   });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(user);
@@ -25,7 +25,7 @@ export async function PATCH(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
 
-  const data: { timezone?: string; currency?: string; theme?: string; locale?: string } = {};
+  const data: { timezone?: string; currency?: string; theme?: string; locale?: string; birthday?: Date | null } = {};
 
   if (body.timezone !== undefined) {
     if (!isValidTimeZone(body.timezone)) {
@@ -55,6 +55,18 @@ export async function PATCH(req: Request) {
     data.locale = body.locale;
   }
 
+  if (body.birthday !== undefined) {
+    if (body.birthday === null || body.birthday === "") {
+      data.birthday = null;
+    } else {
+      const parsed = new Date(body.birthday);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Invalid birthday" }, { status: 400 });
+      }
+      data.birthday = parsed;
+    }
+  }
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No valid fields provided" }, { status: 400 });
   }
@@ -62,7 +74,7 @@ export async function PATCH(req: Request) {
   const user = await prisma.user.update({
     where: { id: userId },
     data,
-    select: { timezone: true, currency: true, theme: true, locale: true },
+    select: { timezone: true, currency: true, theme: true, locale: true, birthday: true },
   });
 
   return NextResponse.json(user);

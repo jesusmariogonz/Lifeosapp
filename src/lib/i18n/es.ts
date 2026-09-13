@@ -38,6 +38,10 @@ const es: typeof en = {
       heading: "Moneda",
       description: "Controla cómo se muestran los montos en Finanzas y Analítica.",
     },
+    birthday: {
+      heading: "Cumpleaños",
+      description: "Configúralo una vez y aparecerá como un evento anual recurrente en tu Calendario y Panel.",
+    },
     theme: {
       heading: "Tema",
       description: "Elige un estilo — se aplica al instante, sin recargar.",
@@ -88,6 +92,7 @@ const es: typeof en = {
     notJournaledToday: "Aún no has escrito en tu diario hoy.",
     openJournal: "Abrir diario",
     mood: "Ánimo",
+    yourBirthday: "🎂 Tu cumpleaños",
   },
   pages: {
     calendar: { title: "Calendario" },

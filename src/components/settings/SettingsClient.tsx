@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Globe2, Wallet, Palette, Languages } from "lucide-react";
+import { Check, Globe2, Wallet, Palette, Languages, Cake } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
@@ -53,11 +53,13 @@ export default function SettingsClient({
   initialCurrency,
   initialTheme,
   initialLocale,
+  initialBirthday,
 }: {
   initialTimezone: string;
   initialCurrency: string;
   initialTheme: string;
   initialLocale: string;
+  initialBirthday: string;
 }) {
   const router = useRouter();
   const { dict, setLocale: setContextLocale } = useTranslation();
@@ -76,6 +78,11 @@ export default function SettingsClient({
 
   const [locale, setLocale] = useState(initialLocale);
   const [localeError, setLocaleError] = useState<string | null>(null);
+
+  const [birthday, setBirthday] = useState(initialBirthday);
+  const [bdaySaving, setBdaySaving] = useState(false);
+  const [bdaySaved, setBdaySaved] = useState(false);
+  const [bdayError, setBdayError] = useState<string | null>(null);
 
   const [browserSuggestion, setBrowserSuggestion] = useState<string | null>(null);
 
@@ -156,6 +163,22 @@ export default function SettingsClient({
     }
   }
 
+  async function saveBirthday(value: string) {
+    setBirthday(value);
+    setBdaySaving(true);
+    setBdayError(null);
+    setBdaySaved(false);
+    try {
+      await apiFetch("/api/settings", { method: "PATCH", body: JSON.stringify({ birthday: value || null }) });
+      setBdaySaved(true);
+      setTimeout(() => setBdaySaved(false), 2500);
+    } catch (e: any) {
+      setBdayError(e.message || "Could not save birthday");
+    } finally {
+      setBdaySaving(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Timezone */}
@@ -212,6 +235,30 @@ export default function SettingsClient({
             </span>
           )}
           {tzError && <span className="text-red-500">{tzError}</span>}
+        </div>
+      </div>
+
+      {/* Birthday */}
+      <div className="card space-y-3">
+        <div className="flex items-center gap-2">
+          <Cake size={18} className="text-sage-500" />
+          <h2 className="font-serif text-lg text-ink">{dict.settings.birthday.heading}</h2>
+        </div>
+        <p className="text-sm text-ink-light">{dict.settings.birthday.description}</p>
+        <input
+          type="date"
+          className="input"
+          value={birthday}
+          onChange={(e) => saveBirthday(e.target.value)}
+        />
+        <div className="flex items-center gap-2 text-xs">
+          {bdaySaving && <span className="text-ink-light">{dict.settings.timezone.saving}</span>}
+          {bdaySaved && (
+            <span className="flex items-center gap-1 text-sage-600">
+              <Check size={14} /> {dict.settings.timezone.saved}
+            </span>
+          )}
+          {bdayError && <span className="text-red-500">{bdayError}</span>}
         </div>
       </div>
 

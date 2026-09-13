@@ -17,6 +17,7 @@ import {
 import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type EventT = {
   id: string;
@@ -60,8 +61,29 @@ function contactDateOccurrences(contacts: Contact[], year: number): EventT[] {
   return occurrences;
 }
 
+// The user's own birthday surfaces the same way — a synthetic, non-deletable
+// all-day event repeated every year it's shown for.
+function birthdayOccurrences(birthday: string | null | undefined, years: number[], label: string): EventT[] {
+  if (!birthday) return [];
+  const orig = new Date(birthday);
+  if (isNaN(orig.getTime())) return [];
+  return years.map((year) => {
+    const occ = new Date(year, orig.getMonth(), orig.getDate());
+    return {
+      id: `bday-${year}`,
+      title: label,
+      description: null,
+      startsAt: occ.toISOString(),
+      endsAt: occ.toISOString(),
+      allDay: true,
+      location: null,
+    };
+  });
+}
+
 export default function CalendarClient() {
   const queryClient = useQueryClient();
+  const { dict } = useTranslation();
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(new Date());
   const [modalDate, setModalDate] = useState<Date | null>(null);
@@ -76,12 +98,25 @@ export default function CalendarClient() {
     queryFn: () => apiFetch("/api/contacts"),
   });
 
+  const { data: settings } = useQuery<{ birthday: string | null }>({
+    queryKey: ["settings"],
+    queryFn: () => apiFetch("/api/settings"),
+  });
+
   const contactEvents = useMemo(() => {
-    const years = new Set([cursor.getFullYear(), cursor.getFullYear() + 1]);
-    return Array.from(years).flatMap((y) => contactDateOccurrences(contacts || [], y));
+    const years = Array.from(new Set([cursor.getFullYear(), cursor.getFullYear() + 1]));
+    return years.flatMap((y) => contactDateOccurrences(contacts || [], y));
   }, [contacts, cursor]);
 
-  const allEvents = useMemo(() => [...(events || []), ...contactEvents], [events, contactEvents]);
+  const birthdayEvents = useMemo(() => {
+    const years = [cursor.getFullYear(), cursor.getFullYear() + 1];
+    return birthdayOccurrences(settings?.birthday, years, dict.dashboard.yourBirthday);
+  }, [settings, cursor, dict]);
+
+  const allEvents = useMemo(
+    () => [...(events || []), ...contactEvents, ...birthdayEvents],
+    [events, contactEvents, birthdayEvents]
+  );
 
   const deleteEvent = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/events/${id}`, { method: "DELETE" }),
@@ -89,7 +124,7 @@ export default function CalendarClient() {
   });
 
   function handleDelete(id: string) {
-    if (id.startsWith("cd-")) return; // contact important dates aren't deletable here
+    if (id.startsWith("cd-") || id.startsWith("bday-")) return; // synthetic recurring dates aren't deletable here
     deleteEvent.mutate(id);
   }
 

@@ -33,6 +33,7 @@ const en: {
       saved: string;
     };
     currency: { heading: string; description: string };
+    birthday: { heading: string; description: string };
     theme: {
       heading: string;
       description: string;
@@ -82,7 +83,8 @@ const en: {
     | "todaysJournal"
     | "notJournaledToday"
     | "openJournal"
-    | "mood",
+    | "mood"
+    | "yourBirthday",
     string
   >;
   pages: {
@@ -137,6 +139,10 @@ const en: {
       heading: "Currency",
       description: "Controls how money amounts are formatted across Finance and Analytics.",
     },
+    birthday: {
+      heading: "Birthday",
+      description: "Set once, then shows up as a recurring yearly event on your Calendar and Dashboard.",
+    },
     theme: {
       heading: "Theme",
       description: "Pick a look — applies instantly, no need to reload.",
@@ -187,6 +193,7 @@ const en: {
     notJournaledToday: "You haven't journaled today.",
     openJournal: "Open journal",
     mood: "Mood",
+    yourBirthday: "🎂 Your Birthday",
   },
   pages: {
     calendar: { title: "Calendar" },

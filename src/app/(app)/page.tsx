@@ -3,6 +3,9 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserTimezone, localDayRangeUtc } from "@/lib/tz";
 import DashboardClient from "@/components/dashboard/DashboardClient";
+import { nextOccurrenceOf } from "@/lib/recurringDates";
+import { getUserLocale } from "@/lib/i18n/getUserLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 // V2: cross-area analytics hook (dashboard is where cross-module rollups will surface)
 export default async function DashboardPage() {
@@ -37,14 +40,20 @@ export default async function DashboardPage() {
       prisma.contact.findMany({ where: { userId }, include: { importantDates: true } }),
     ]);
 
-  const upcomingDates = contacts
-    .flatMap((c) => c.importantDates.map((d) => ({ label: d.label, contactName: c.name, date: d.date })))
-    .map((d) => {
-      const orig = new Date(d.date);
-      const next = new Date(today.getFullYear(), orig.getMonth(), orig.getDate());
-      if (next < today) next.setFullYear(next.getFullYear() + 1);
-      return { ...d, next };
-    })
+  const locale = await getUserLocale(userId);
+  const dict = getDictionary(locale);
+
+  const contactDates = contacts
+    .flatMap((c) => c.importantDates.map((d) => ({ label: d.label, contactName: c.name as string | null, date: d.date })))
+    .map((d) => ({ ...d, next: nextOccurrenceOf(new Date(d.date), today) }));
+
+  // The user's own birthday surfaces the same way Contact important dates do —
+  // a synthetic, non-deletable recurring yearly date, merged into one sorted list.
+  const birthdayDate = user?.birthday
+    ? [{ label: dict.dashboard.yourBirthday, contactName: null, date: user.birthday, next: nextOccurrenceOf(new Date(user.birthday), today) }]
+    : [];
+
+  const upcomingDates = [...contactDates, ...birthdayDate]
     .filter((d) => d.next.getTime() - today.getTime() <= 30 * 86400000)
     .sort((a, b) => a.next.getTime() - b.next.getTime())
     .slice(0, 4);

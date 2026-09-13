@@ -29,6 +29,7 @@ export async function runSeed(prisma: PrismaClient) {
       currency: "MXN",
       theme: "light",
       locale: "es",
+      birthday: new Date(1990, 8, 20), // Sept 20 (year is not used — only month/day matter)
     },
   });
 
