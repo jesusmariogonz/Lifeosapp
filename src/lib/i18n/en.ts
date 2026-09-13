@@ -106,6 +106,11 @@ const en: {
       viewAllTasks: string;
       close: string;
       allDay: string;
+      editEvent: string;
+      newEventTitle: string;
+      editEventTitle: string;
+      saveEvent: string;
+      saveChanges: string;
     };
     tasks: {
       title: string;
@@ -145,6 +150,10 @@ const en: {
       cancel: string;
       deleting: string;
       loading: string;
+      editTask: string;
+      editTaskTitle: string;
+      saveChanges: string;
+      cancelEdit: string;
     };
     goals: { title: string; addGoal: string; empty: string };
     habits: { title: string; addHabit: string; empty: string };
@@ -270,6 +279,11 @@ const en: {
       viewAllTasks: "View all tasks",
       close: "Close",
       allDay: "All day",
+      editEvent: "Edit event",
+      newEventTitle: "New event",
+      editEventTitle: "Edit event",
+      saveEvent: "Save event",
+      saveChanges: "Save changes",
     },
     tasks: {
       title: "Tasks",
@@ -309,6 +323,10 @@ const en: {
       cancel: "Cancel",
       deleting: "Deleting...",
       loading: "Loading tasks...",
+      editTask: "Edit task",
+      editTaskTitle: "Edit task",
+      saveChanges: "Save changes",
+      cancelEdit: "Cancel",
     },
     goals: { title: "Goals & Vision", addGoal: "Add goal", empty: "No goals yet." },
     habits: { title: "Habits", addHabit: "Add habit", empty: "No habits yet." },

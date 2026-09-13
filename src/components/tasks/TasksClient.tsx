@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CheckCircle2, Circle, Trash2, Plus, Repeat, ChevronUp, ChevronDown } from "lucide-react";
+import { CheckCircle2, Circle, Trash2, Plus, Repeat, ChevronUp, ChevronDown, Pencil, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn, dateOnlyToLocal } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
@@ -52,6 +52,7 @@ export default function TasksClient() {
   const [repeat, setRepeat] = useState<RepeatOption>("NONE");
   const [customDays, setCustomDays] = useState<number[]>([]);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   function handleDueDateChange(value: string) {
     setDueDate(value);
@@ -123,6 +124,18 @@ export default function TasksClient() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setTaskToDelete(null);
+    },
+  });
+
+  const editTask = useMutation({
+    mutationFn: (vars: { id: string; title: string; dueDate: string | null; priority: number }) =>
+      apiFetch(`/api/tasks/${vars.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: vars.title, dueDate: vars.dueDate, priority: vars.priority }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setEditingTask(null);
     },
   });
 
@@ -285,6 +298,9 @@ export default function TasksClient() {
                 <button onClick={() => postponeTask.mutate(task)} className="btn-secondary text-xs px-2 py-1">
                   {t.postpone}
                 </button>
+                <button onClick={() => setEditingTask(task)} className="text-ink-light hover:text-sage-600" aria-label={t.editTask}>
+                  <Pencil size={16} />
+                </button>
                 <button onClick={() => setTaskToDelete(task)} className="text-ink-light hover:text-red-500">
                   <Trash2 size={16} />
                 </button>
@@ -342,6 +358,81 @@ export default function TasksClient() {
           </div>
         </div>
       )}
+
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSave={(vars) => editTask.mutate(vars)}
+          isSaving={editTask.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditTaskModal({
+  task,
+  onClose,
+  onSave,
+  isSaving,
+}: {
+  task: Task;
+  onClose: () => void;
+  onSave: (vars: { id: string; title: string; dueDate: string | null; priority: number }) => void;
+  isSaving: boolean;
+}) {
+  const { dict } = useTranslation();
+  const t = dict.pages.tasks;
+  const [title, setTitle] = useState(task.title);
+  const [dueDate, setDueDate] = useState(task.dueDate ? format(dateOnlyToLocal(task.dueDate), "yyyy-MM-dd") : "");
+  const [priority, setPriority] = useState(task.priority);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 sm:items-center sm:px-4" onClick={onClose}>
+      <div
+        className="card w-full max-w-sm rounded-b-none sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-serif text-lg">{t.editTaskTitle}</h3>
+          <button onClick={onClose} aria-label={t.cancelEdit}>
+            <X size={18} />
+          </button>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (title.trim()) onSave({ id: task.id, title, dueDate: dueDate || null, priority });
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <label className="label">{t.newTask}</label>
+            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </div>
+          <div>
+            <label className="label">{t.dueDate}</label>
+            <input className="input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="label">{t.priority}</label>
+            <select className="input" value={priority} onChange={(e) => setPriority(Number(e.target.value))}>
+              <option value={1}>{t.priorityHigh}</option>
+              <option value={2}>{t.priorityMedium}</option>
+              <option value={3}>{t.priorityLow}</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" className="btn-secondary" onClick={onClose}>
+              {t.cancelEdit}
+            </button>
+            <button type="submit" className="btn-primary" disabled={isSaving}>
+              {t.saveChanges}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

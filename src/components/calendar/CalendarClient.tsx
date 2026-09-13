@@ -100,6 +100,7 @@ export default function CalendarClient() {
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(new Date());
   const [modalDate, setModalDate] = useState<Date | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventT | null>(null);
   const [detailDate, setDetailDate] = useState<Date | null>(null);
 
   const { data: events } = useQuery<EventT[]>({
@@ -211,6 +212,7 @@ export default function CalendarClient() {
       )}
 
       {modalDate && <EventModal date={modalDate} onClose={() => setModalDate(null)} />}
+      {editingEvent && <EventModal event={editingEvent} onClose={() => setEditingEvent(null)} />}
       {detailDate && (
         <DayDetailModal
           date={detailDate}
@@ -222,6 +224,10 @@ export default function CalendarClient() {
           onAddEvent={(d) => {
             setDetailDate(null);
             setModalDate(d);
+          }}
+          onEditEvent={(e) => {
+            setDetailDate(null);
+            setEditingEvent(e);
           }}
         />
       )}
@@ -431,6 +437,7 @@ function DayDetailModal({
   onDelete,
   onToggleTask,
   onAddEvent,
+  onEditEvent,
 }: {
   date: Date;
   events: EventT[];
@@ -439,6 +446,7 @@ function DayDetailModal({
   onDelete: (id: string) => void;
   onToggleTask: (t: TaskT) => void;
   onAddEvent: (d: Date) => void;
+  onEditEvent: (e: EventT) => void;
 }) {
   const { dict } = useTranslation();
   const sortedEvents = [...events].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
@@ -467,18 +475,32 @@ function DayDetailModal({
           {sortedEvents.length === 0 && <p className="text-xs text-ink-light">{dict.pages.calendar.noEvents}</p>}
           <ul className="space-y-1.5">
             {sortedEvents.map((e) => {
-              const deletable = !e.id.startsWith("cd-") && !e.id.startsWith("bday-");
+              const editable = !e.id.startsWith("cd-") && !e.id.startsWith("bday-");
               return (
                 <li key={e.id} className="flex items-center justify-between rounded-lg bg-sage-50 px-2.5 py-1.5">
-                  <div>
-                    <p className="text-sm font-medium">{e.title}</p>
-                    <p className="text-[11px] text-ink-light">
-                      {e.allDay ? dict.pages.calendar.allDay : format(new Date(e.startsAt), "h:mm a")}
-                      {e.location ? ` · ${e.location}` : ""}
-                    </p>
-                  </div>
-                  {deletable && (
-                    <button onClick={() => onDelete(e.id)} className="text-ink-light hover:text-red-500">
+                  {editable ? (
+                    <button
+                      onClick={() => onEditEvent(e)}
+                      className="min-w-0 flex-1 text-left"
+                      aria-label={dict.pages.calendar.editEvent}
+                    >
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="text-[11px] text-ink-light">
+                        {e.allDay ? dict.pages.calendar.allDay : format(new Date(e.startsAt), "h:mm a")}
+                        {e.location ? ` · ${e.location}` : ""}
+                      </p>
+                    </button>
+                  ) : (
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="text-[11px] text-ink-light">
+                        {e.allDay ? dict.pages.calendar.allDay : format(new Date(e.startsAt), "h:mm a")}
+                        {e.location ? ` · ${e.location}` : ""}
+                      </p>
+                    </div>
+                  )}
+                  {editable && (
+                    <button onClick={() => onDelete(e.id)} className="ml-2 shrink-0 text-ink-light hover:text-red-500">
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -515,26 +537,37 @@ function DayDetailModal({
   );
 }
 
-function EventModal({ date, onClose }: { date: Date; onClose: () => void }) {
+function EventModal({
+  date,
+  event,
+  onClose,
+}: {
+  date?: Date;
+  event?: EventT;
+  onClose: () => void;
+}) {
+  const { dict } = useTranslation();
   const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("10:00");
-  const [allDay, setAllDay] = useState(false);
-  const [location, setLocation] = useState("");
+  const isEdit = !!event;
+  const baseDate = event ? new Date(event.startsAt) : date!;
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [startTime, setStartTime] = useState(event && !event.allDay ? format(new Date(event.startsAt), "HH:mm") : "09:00");
+  const [endTime, setEndTime] = useState(event && !event.allDay ? format(new Date(event.endsAt), "HH:mm") : "10:00");
+  const [allDay, setAllDay] = useState(event?.allDay ?? false);
+  const [location, setLocation] = useState(event?.location ?? "");
 
-  const createEvent = useMutation({
+  const saveEvent = useMutation({
     mutationFn: () => {
       const [sh, sm] = startTime.split(":").map(Number);
       const [eh, em] = endTime.split(":").map(Number);
-      const startsAt = new Date(date);
+      const startsAt = new Date(baseDate);
       startsAt.setHours(sh, sm, 0, 0);
-      const endsAt = new Date(date);
+      const endsAt = new Date(baseDate);
       endsAt.setHours(eh, em, 0, 0);
-      return apiFetch("/api/events", {
-        method: "POST",
-        body: JSON.stringify({ title, startsAt, endsAt, allDay, location }),
-      });
+      const payload = { title, startsAt, endsAt, allDay, location };
+      return isEdit
+        ? apiFetch(`/api/events/${event!.id}`, { method: "PATCH", body: JSON.stringify(payload) })
+        : apiFetch("/api/events", { method: "POST", body: JSON.stringify(payload) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -546,7 +579,9 @@ function EventModal({ date, onClose }: { date: Date; onClose: () => void }) {
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 px-4" onClick={onClose}>
       <div className="card w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-serif text-lg">New event — {format(date, "MMM d")}</h3>
+          <h3 className="font-serif text-lg">
+            {isEdit ? dict.pages.calendar.editEventTitle : dict.pages.calendar.newEventTitle} — {format(baseDate, "MMM d")}
+          </h3>
           <button onClick={onClose}>
             <X size={18} />
           </button>
@@ -554,7 +589,7 @@ function EventModal({ date, onClose }: { date: Date; onClose: () => void }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (title.trim()) createEvent.mutate();
+            if (title.trim()) saveEvent.mutate();
           }}
           className="space-y-3"
         >
@@ -582,7 +617,7 @@ function EventModal({ date, onClose }: { date: Date; onClose: () => void }) {
             <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
           </div>
           <button type="submit" className="btn-primary w-full">
-            Save event
+            {isEdit ? dict.pages.calendar.saveChanges : dict.pages.calendar.saveEvent}
           </button>
         </form>
       </div>
