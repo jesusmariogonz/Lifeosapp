@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { weatherCodeToCondition, type DailyPoint } from "@/lib/weather";
+import { weatherCodeToCondition, type DailyPoint, type HourlyPoint } from "@/lib/weather";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type Location = {
@@ -212,6 +212,7 @@ function LocationDetailModal({ id, onClose }: { id: string; onClose: () => void 
     queryKey: ["weather-history", id],
     queryFn: () => apiFetch(`/api/weather/${id}/history`),
   });
+  const [hourlyDate, setHourlyDate] = useState<string | null>(null);
 
   const todayKey = format(new Date(), "yyyy-MM-dd");
   const temps = (data?.days || []).flatMap((d) => [d.max, d.min]).filter((n): n is number => n !== null);
@@ -238,10 +239,11 @@ function LocationDetailModal({ id, onClose }: { id: string; onClose: () => void 
               const barTop = d.max !== null ? ((maxTemp - d.max) / range) * 40 : 40;
               const barHeight = d.max !== null && d.min !== null ? Math.max(((d.max - d.min) / range) * 40, 4) : 4;
               return (
-                <div
+                <button
                   key={d.date}
+                  onClick={() => setHourlyDate(d.date)}
                   className={cn(
-                    "flex min-w-[76px] flex-col items-center gap-1 rounded-lg border px-2 py-3 text-center",
+                    "flex min-w-[76px] flex-col items-center gap-1 rounded-lg border px-2 py-3 text-center hover:border-sage-400",
                     isToday ? "border-sage-400 bg-sage-50" : "border-cream-300"
                   )}
                 >
@@ -258,12 +260,64 @@ function LocationDetailModal({ id, onClose }: { id: string; onClose: () => void 
                   <span className="text-xs font-semibold">{d.max !== null ? `${Math.round(d.max)}°` : "—"}</span>
                   <span className="text-xs text-ink-light">{d.min !== null ? `${Math.round(d.min)}°` : "—"}</span>
                   <span className="text-[10px] leading-tight text-ink-light">{condition.label}</span>
-                </div>
+                </button>
               );
             })}
           </div>
         )}
-        <p className="mt-2 text-xs text-ink-light">Past 7 days through next 7 days, in °C.</p>
+        <p className="mt-2 text-xs text-ink-light">Past 7 days through next 7 days, in °C. Tap a day for hourly detail.</p>
+      </div>
+      {hourlyDate && (
+        <HourlyDetailModal locationId={id} date={hourlyDate} onClose={() => setHourlyDate(null)} />
+      )}
+    </div>
+  );
+}
+
+function HourlyDetailModal({ locationId, date, onClose }: { locationId: string; date: string; onClose: () => void }) {
+  const { data, isLoading } = useQuery<{ date: string; hours: HourlyPoint[] }>({
+    queryKey: ["weather-hourly", locationId, date],
+    queryFn: () => apiFetch(`/api/weather/${locationId}/hourly?date=${date}`),
+  });
+
+  const temps = (data?.hours || []).map((h) => h.temp).filter((n): n is number => n !== null);
+  const maxTemp = temps.length ? Math.max(...temps) : 1;
+  const minTemp = temps.length ? Math.min(...temps) : 0;
+  const range = Math.max(maxTemp - minTemp, 1);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 sm:items-center sm:px-4" onClick={onClose}>
+      <div className="card w-full max-w-2xl rounded-b-none sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-serif text-lg">{format(parseISO(date), "EEEE, MMM d")}</h3>
+          <button onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+        {isLoading && <p className="text-sm text-ink-light">Loading hourly forecast...</p>}
+        {!isLoading && (
+          <div className="-mx-1 flex gap-3 overflow-x-auto pb-2">
+            {data?.hours.map((h) => {
+              const condition = weatherCodeToCondition(h.code);
+              const Icon = ICONS[condition.icon];
+              const barTop = h.temp !== null ? ((maxTemp - h.temp) / range) * 40 : 40;
+              return (
+                <div
+                  key={h.time}
+                  className="flex min-w-[60px] flex-col items-center gap-1 rounded-lg border border-cream-300 px-2 py-3 text-center"
+                >
+                  <span className="text-xs font-medium text-ink-light">{format(parseISO(h.time), "h a")}</span>
+                  <Icon size={18} className="text-sage-500" />
+                  <div className="relative h-10 w-1.5 rounded-full bg-cream-200">
+                    <div className="absolute h-1.5 w-1.5 rounded-full bg-sage-400" style={{ top: `${barTop}px` }} />
+                  </div>
+                  <span className="text-xs font-semibold">{h.temp !== null ? `${Math.round(h.temp)}°` : "—"}</span>
+                </div>
+              );
+            })}
+            {data?.hours.length === 0 && <p className="text-sm text-ink-light">No hourly data available.</p>}
+          </div>
+        )}
       </div>
     </div>
   );

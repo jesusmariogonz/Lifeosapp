@@ -44,3 +44,24 @@ export function dailyToPoints(daily: OpenMeteoDaily | undefined | null): DailyPo
     code: daily.weathercode?.[i] ?? null,
   }));
 }
+
+export type HourlyPoint = {
+  time: string; // ISO, e.g. "2026-09-14T14:00"
+  temp: number | null;
+  code: number | null;
+};
+
+export type OpenMeteoHourly = {
+  time: string[];
+  temperature_2m: number[];
+  weathercode: number[];
+};
+
+export function hourlyToPoints(hourly: OpenMeteoHourly | undefined | null): HourlyPoint[] {
+  if (!hourly?.time) return [];
+  return hourly.time.map((time, i) => ({
+    time,
+    temp: hourly.temperature_2m?.[i] ?? null,
+    code: hourly.weathercode?.[i] ?? null,
+  }));
+}
